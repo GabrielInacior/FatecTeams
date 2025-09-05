@@ -1,0 +1,59 @@
+{
+  "name": "fatecteamsbackend",
+  "version": "1.0.0",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "nodemon --exec ts-node src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "start:prod": "npm run build && npm start",
+    "migration:run": "psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f migrations/001_criar_estrutura_inicial.sql",
+    "clean": "rimraf dist",
+    "type-check": "tsc --noEmit",
+    "test": "echo \"Tests not implemented yet\" && exit 0"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "typescript",
+    "postgresql",
+    "jwt",
+    "websocket",
+    "rest-api",
+    "ddd"
+  ],
+  "author": "FatecTeams",
+  "license": "MIT",
+  "description": "Backend API para o aplicativo FatecTeams - Plataforma de grupos de estudo",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.882.0",
+    "@aws-sdk/s3-request-presigner": "^3.882.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/compression": "^1.8.1",
+    "@types/cors": "^2.8.19",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
+    "@types/multer": "^2.0.0",
+    "@types/pg": "^8.15.5",
+    "@types/uuid": "^10.0.0",
+    "bcryptjs": "^3.0.2",
+    "chalk": "^4.1.2",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "multer": "^2.0.2",
+    "pg": "^8.16.3",
+    "socket.io": "^4.8.1",
+    "typescript": "^5.9.2",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0"
+  }
+}

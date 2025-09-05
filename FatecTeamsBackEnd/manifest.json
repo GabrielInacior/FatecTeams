@@ -1,0 +1,561 @@
+{
+  "nome": "FatecTeams API",
+  "versao": "1.0.0",
+  "descricao": "API REST para o aplicativo FatecTeams - Sistema de grupos de estudo",
+  "baseUrl": "/api",
+  "rotas": {
+    "usuarios": {
+      "prefixo": "/usuarios",
+      "descricao": "Gestão de usuários",
+      "endpoints": {
+        "criarUsuario": {
+          "metodo": "POST",
+          "rota": "/",
+          "descricao": "Criar novo usuário",
+          "autenticacao": false,
+          "controller": "UsuarioController",
+          "funcao": "criarUsuario"
+        },
+        "autenticarUsuario": {
+          "metodo": "POST",
+          "rota": "/login",
+          "descricao": "Autenticar usuário (login)",
+          "autenticacao": false,
+          "controller": "UsuarioController",
+          "funcao": "autenticarUsuario"
+        },
+        "obterPerfilUsuario": {
+          "metodo": "GET",
+          "rota": "/perfil",
+          "descricao": "Obter perfil do usuário logado",
+          "autenticacao": true,
+          "controller": "UsuarioController",
+          "funcao": "obterPerfilUsuario"
+        },
+        "atualizarPerfilUsuario": {
+          "metodo": "PUT",
+          "rota": "/perfil",
+          "descricao": "Atualizar perfil do usuário",
+          "autenticacao": true,
+          "controller": "UsuarioController",
+          "funcao": "atualizarPerfilUsuario"
+        },
+        "uploadFotoPerfilUsuario": {
+          "metodo": "POST",
+          "rota": "/foto-perfil",
+          "descricao": "Upload de foto de perfil",
+          "autenticacao": true,
+          "controller": "UsuarioController",
+          "funcao": "uploadFotoPerfilUsuario"
+        },
+        "desativarUsuario": {
+          "metodo": "DELETE",
+          "rota": "/perfil",
+          "descricao": "Desativar usuário",
+          "autenticacao": true,
+          "controller": "UsuarioController",
+          "funcao": "desativarUsuario"
+        },
+        "recuperarSenhaUsuario": {
+          "metodo": "POST",
+          "rota": "/recuperar-senha",
+          "descricao": "Recuperar senha por email",
+          "autenticacao": false,
+          "controller": "UsuarioController",
+          "funcao": "recuperarSenhaUsuario"
+        },
+        "redefinirSenhaUsuario": {
+          "metodo": "POST",
+          "rota": "/redefinir-senha",
+          "descricao": "Redefinir senha com token",
+          "autenticacao": false,
+          "controller": "UsuarioController",
+          "funcao": "redefinirSenhaUsuario"
+        }
+      }
+    },
+    "auth": {
+      "prefixo": "/auth",
+      "descricao": "Autenticação e OAuth",
+      "endpoints": {
+        "loginOauthGoogle": {
+          "metodo": "POST",
+          "rota": "/google",
+          "descricao": "Login OAuth com Google",
+          "autenticacao": false,
+          "controller": "AuthController",
+          "funcao": "loginOauthGoogle"
+        },
+        "loginOauthMicrosoft": {
+          "metodo": "POST",
+          "rota": "/microsoft",
+          "descricao": "Login OAuth com Microsoft",
+          "autenticacao": false,
+          "controller": "AuthController",
+          "funcao": "loginOauthMicrosoft"
+        },
+        "renovarTokenJwt": {
+          "metodo": "POST",
+          "rota": "/refresh",
+          "descricao": "Renovar token JWT",
+          "autenticacao": false,
+          "controller": "AuthController",
+          "funcao": "renovarTokenJwt"
+        },
+        "revogarTokenJwt": {
+          "metodo": "POST",
+          "rota": "/logout",
+          "descricao": "Revogar token (logout)",
+          "autenticacao": true,
+          "controller": "AuthController",
+          "funcao": "revogarTokenJwt"
+        },
+        "validarTokenJwt": {
+          "metodo": "GET",
+          "rota": "/validate",
+          "descricao": "Validar token JWT",
+          "autenticacao": true,
+          "controller": "AuthController",
+          "funcao": "validarTokenJwt"
+        }
+      }
+    },
+    "grupos": {
+      "prefixo": "/grupos",
+      "descricao": "Gestão de grupos",
+      "endpoints": {
+        "criarGrupo": {
+          "metodo": "POST",
+          "rota": "/",
+          "descricao": "Criar novo grupo",
+          "autenticacao": true,
+          "controller": "GrupoController",
+          "funcao": "criarGrupo"
+        },
+        "listarGruposUsuario": {
+          "metodo": "GET",
+          "rota": "/",
+          "descricao": "Listar grupos do usuário",
+          "autenticacao": true,
+          "controller": "GrupoController",
+          "funcao": "listarGruposUsuario"
+        },
+        "obterDetalhesGrupo": {
+          "metodo": "GET",
+          "rota": "/:id",
+          "descricao": "Obter detalhes de um grupo",
+          "autenticacao": true,
+          "controller": "GrupoController",
+          "funcao": "obterDetalhesGrupo"
+        },
+        "atualizarGrupo": {
+          "metodo": "PUT",
+          "rota": "/:id",
+          "descricao": "Atualizar dados do grupo",
+          "autenticacao": true,
+          "controller": "GrupoController",
+          "funcao": "atualizarGrupo"
+        },
+        "excluirGrupo": {
+          "metodo": "DELETE",
+          "rota": "/:id",
+          "descricao": "Excluir grupo",
+          "autenticacao": true,
+          "controller": "GrupoController",
+          "funcao": "excluirGrupo"
+        },
+        "sairGrupo": {
+          "metodo": "POST",
+          "rota": "/:id/sair",
+          "descricao": "Sair do grupo",
+          "autenticacao": true,
+          "controller": "GrupoController",
+          "funcao": "sairGrupo"
+        },
+        "buscarGruposPorCodigo": {
+          "metodo": "GET",
+          "rota": "/buscar/:codigo",
+          "descricao": "Buscar grupo por código",
+          "autenticacao": true,
+          "controller": "GrupoController",
+          "funcao": "buscarGruposPorCodigo"
+        }
+      }
+    },
+    "membros": {
+      "prefixo": "/grupos/:grupoId/membros",
+      "descricao": "Gestão de membros dos grupos",
+      "endpoints": {
+        "listarMembrosGrupo": {
+          "metodo": "GET",
+          "rota": "/",
+          "descricao": "Listar membros do grupo",
+          "autenticacao": true,
+          "controller": "MembroGrupoController",
+          "funcao": "listarMembrosGrupo"
+        },
+        "adicionarMembroGrupo": {
+          "metodo": "POST",
+          "rota": "/",
+          "descricao": "Adicionar membro ao grupo",
+          "autenticacao": true,
+          "controller": "MembroGrupoController",
+          "funcao": "adicionarMembroGrupo"
+        },
+        "atualizarPermissaoMembro": {
+          "metodo": "PUT",
+          "rota": "/:usuarioId",
+          "descricao": "Atualizar permissão do membro",
+          "autenticacao": true,
+          "controller": "MembroGrupoController",
+          "funcao": "atualizarPermissaoMembro"
+        },
+        "removerMembroGrupo": {
+          "metodo": "DELETE",
+          "rota": "/:usuarioId",
+          "descricao": "Remover membro do grupo",
+          "autenticacao": true,
+          "controller": "MembroGrupoController",
+          "funcao": "removerMembroGrupo"
+        }
+      }
+    },
+    "mensagens": {
+      "prefixo": "/grupos/:grupoId/mensagens",
+      "descricao": "Sistema de mensagens (chat)",
+      "endpoints": {
+        "enviarMensagem": {
+          "metodo": "POST",
+          "rota": "/",
+          "descricao": "Enviar mensagem no grupo",
+          "autenticacao": true,
+          "controller": "MensagemController",
+          "funcao": "enviarMensagem"
+        },
+        "listarMensagensGrupo": {
+          "metodo": "GET",
+          "rota": "/",
+          "descricao": "Listar mensagens do grupo",
+          "autenticacao": true,
+          "controller": "MensagemController",
+          "funcao": "listarMensagensGrupo"
+        },
+        "editarMensagem": {
+          "metodo": "PUT",
+          "rota": "/:mensagemId",
+          "descricao": "Editar mensagem",
+          "autenticacao": true,
+          "controller": "MensagemController",
+          "funcao": "editarMensagem"
+        },
+        "excluirMensagem": {
+          "metodo": "DELETE",
+          "rota": "/:mensagemId",
+          "descricao": "Excluir mensagem",
+          "autenticacao": true,
+          "controller": "MensagemController",
+          "funcao": "excluirMensagem"
+        },
+        "marcarMensagemLida": {
+          "metodo": "POST",
+          "rota": "/:mensagemId/lida",
+          "descricao": "Marcar mensagem como lida",
+          "autenticacao": true,
+          "controller": "MensagemController",
+          "funcao": "marcarMensagemLida"
+        }
+      }
+    },
+    "arquivos": {
+      "prefixo": "/grupos/:grupoId/arquivos",
+      "descricao": "Sistema de arquivos",
+      "endpoints": {
+        "uploadArquivo": {
+          "metodo": "POST",
+          "rota": "/",
+          "descricao": "Upload de arquivo no grupo",
+          "autenticacao": true,
+          "controller": "ArquivoController",
+          "funcao": "uploadArquivo"
+        },
+        "listarArquivosGrupo": {
+          "metodo": "GET",
+          "rota": "/",
+          "descricao": "Listar arquivos do grupo",
+          "autenticacao": true,
+          "controller": "ArquivoController",
+          "funcao": "listarArquivosGrupo"
+        },
+        "baixarArquivo": {
+          "metodo": "GET",
+          "rota": "/:arquivoId/download",
+          "descricao": "Baixar arquivo",
+          "autenticacao": true,
+          "controller": "ArquivoController",
+          "funcao": "baixarArquivo"
+        },
+        "excluirArquivo": {
+          "metodo": "DELETE",
+          "rota": "/:arquivoId",
+          "descricao": "Excluir arquivo",
+          "autenticacao": true,
+          "controller": "ArquivoController",
+          "funcao": "excluirArquivo"
+        },
+        "obterDetalhesArquivo": {
+          "metodo": "GET",
+          "rota": "/:arquivoId",
+          "descricao": "Obter detalhes do arquivo",
+          "autenticacao": true,
+          "controller": "ArquivoController",
+          "funcao": "obterDetalhesArquivo"
+        }
+      }
+    },
+    "tarefas": {
+      "prefixo": "/grupos/:grupoId/tarefas",
+      "descricao": "Sistema de tarefas",
+      "endpoints": {
+        "criarTarefa": {
+          "metodo": "POST",
+          "rota": "/",
+          "descricao": "Criar nova tarefa",
+          "autenticacao": true,
+          "controller": "TarefaController",
+          "funcao": "criarTarefa"
+        },
+        "listarTarefasGrupo": {
+          "metodo": "GET",
+          "rota": "/",
+          "descricao": "Listar tarefas do grupo",
+          "autenticacao": true,
+          "controller": "TarefaController",
+          "funcao": "listarTarefasGrupo"
+        },
+        "obterDetalhesTarefa": {
+          "metodo": "GET",
+          "rota": "/:tarefaId",
+          "descricao": "Obter detalhes da tarefa",
+          "autenticacao": true,
+          "controller": "TarefaController",
+          "funcao": "obterDetalhesTarefa"
+        },
+        "atualizarTarefa": {
+          "metodo": "PUT",
+          "rota": "/:tarefaId",
+          "descricao": "Atualizar tarefa",
+          "autenticacao": true,
+          "controller": "TarefaController",
+          "funcao": "atualizarTarefa"
+        },
+        "excluirTarefa": {
+          "metodo": "DELETE",
+          "rota": "/:tarefaId",
+          "descricao": "Excluir tarefa",
+          "autenticacao": true,
+          "controller": "TarefaController",
+          "funcao": "excluirTarefa"
+        },
+        "atribuirTarefaUsuario": {
+          "metodo": "POST",
+          "rota": "/:tarefaId/atribuir",
+          "descricao": "Atribuir tarefa a usuário",
+          "autenticacao": true,
+          "controller": "TarefaController",
+          "funcao": "atribuirTarefaUsuario"
+        },
+        "marcarTarefaConcluida": {
+          "metodo": "POST",
+          "rota": "/:tarefaId/concluir",
+          "descricao": "Marcar tarefa como concluída",
+          "autenticacao": true,
+          "controller": "TarefaController",
+          "funcao": "marcarTarefaConcluida"
+        }
+      }
+    },
+    "eventos": {
+      "prefixo": "/grupos/:grupoId/eventos",
+      "descricao": "Sistema de calendário e eventos",
+      "endpoints": {
+        "criarEvento": {
+          "metodo": "POST",
+          "rota": "/",
+          "descricao": "Criar novo evento",
+          "autenticacao": true,
+          "controller": "EventoController",
+          "funcao": "criarEvento"
+        },
+        "listarEventosGrupo": {
+          "metodo": "GET",
+          "rota": "/",
+          "descricao": "Listar eventos do grupo",
+          "autenticacao": true,
+          "controller": "EventoController",
+          "funcao": "listarEventosGrupo"
+        },
+        "obterDetalhesEvento": {
+          "metodo": "GET",
+          "rota": "/:eventoId",
+          "descricao": "Obter detalhes do evento",
+          "autenticacao": true,
+          "controller": "EventoController",
+          "funcao": "obterDetalhesEvento"
+        },
+        "atualizarEvento": {
+          "metodo": "PUT",
+          "rota": "/:eventoId",
+          "descricao": "Atualizar evento",
+          "autenticacao": true,
+          "controller": "EventoController",
+          "funcao": "atualizarEvento"
+        },
+        "excluirEvento": {
+          "metodo": "DELETE",
+          "rota": "/:eventoId",
+          "descricao": "Excluir evento",
+          "autenticacao": true,
+          "controller": "EventoController",
+          "funcao": "excluirEvento"
+        }
+      }
+    },
+    "convites": {
+      "prefixo": "/convites",
+      "descricao": "Sistema de convites para grupos",
+      "endpoints": {
+        "enviarConviteEmail": {
+          "metodo": "POST",
+          "rota": "/grupos/:grupoId",
+          "descricao": "Enviar convite por email",
+          "autenticacao": true,
+          "controller": "ConviteController",
+          "funcao": "enviarConviteEmail"
+        },
+        "listarConvitesPendentes": {
+          "metodo": "GET",
+          "rota": "/",
+          "descricao": "Listar convites pendentes do usuário",
+          "autenticacao": true,
+          "controller": "ConviteController",
+          "funcao": "listarConvitesPendentes"
+        },
+        "aceitarConvite": {
+          "metodo": "POST",
+          "rota": "/:codigo/aceitar",
+          "descricao": "Aceitar convite para grupo",
+          "autenticacao": true,
+          "controller": "ConviteController",
+          "funcao": "aceitarConvite"
+        },
+        "recusarConvite": {
+          "metodo": "POST",
+          "rota": "/:codigo/recusar",
+          "descricao": "Recusar convite para grupo",
+          "autenticacao": true,
+          "controller": "ConviteController",
+          "funcao": "recusarConvite"
+        },
+        "listarConvitesGrupo": {
+          "metodo": "GET",
+          "rota": "/grupos/:grupoId",
+          "descricao": "Listar convites do grupo",
+          "autenticacao": true,
+          "controller": "ConviteController",
+          "funcao": "listarConvitesGrupo"
+        }
+      }
+    },
+    "notificacoes": {
+      "prefixo": "/notificacoes",
+      "descricao": "Sistema de notificações",
+      "endpoints": {
+        "listarNotificacoesUsuario": {
+          "metodo": "GET",
+          "rota": "/",
+          "descricao": "Listar notificações do usuário",
+          "autenticacao": true,
+          "controller": "NotificacaoController",
+          "funcao": "listarNotificacoesUsuario"
+        },
+        "marcarNotificacaoLida": {
+          "metodo": "PUT",
+          "rota": "/:notificacaoId/lida",
+          "descricao": "Marcar notificação como lida",
+          "autenticacao": true,
+          "controller": "NotificacaoController",
+          "funcao": "marcarNotificacaoLida"
+        },
+        "marcarTodasLidas": {
+          "metodo": "PUT",
+          "rota": "/marcar-todas-lidas",
+          "descricao": "Marcar todas as notificações como lidas",
+          "autenticacao": true,
+          "controller": "NotificacaoController",
+          "funcao": "marcarTodasLidas"
+        },
+        "excluirNotificacao": {
+          "metodo": "DELETE",
+          "rota": "/:notificacaoId",
+          "descricao": "Excluir notificação",
+          "autenticacao": true,
+          "controller": "NotificacaoController",
+          "funcao": "excluirNotificacao"
+        }
+      }
+    },
+    "relatorios": {
+      "prefixo": "/relatorios",
+      "descricao": "Relatórios e estatísticas",
+      "endpoints": {
+        "obterEstatisticasGrupo": {
+          "metodo": "GET",
+          "rota": "/grupos/:grupoId/estatisticas",
+          "descricao": "Obter estatísticas do grupo",
+          "autenticacao": true,
+          "controller": "RelatorioController",
+          "funcao": "obterEstatisticasGrupo"
+        },
+        "obterHistoricoAtividades": {
+          "metodo": "GET",
+          "rota": "/grupos/:grupoId/historico",
+          "descricao": "Obter histórico de atividades",
+          "autenticacao": true,
+          "controller": "RelatorioController",
+          "funcao": "obterHistoricoAtividades"
+        },
+        "obterRelatorioUsuario": {
+          "metodo": "GET",
+          "rota": "/usuarios/relatorio",
+          "descricao": "Obter relatório do usuário",
+          "autenticacao": true,
+          "controller": "RelatorioController",
+          "funcao": "obterRelatorioUsuario"
+        }
+      }
+    }
+  },
+  "websockets": {
+    "namespace": "/",
+    "eventos": {
+      "join-group": "Entrar na sala do grupo",
+      "leave-group": "Sair da sala do grupo",
+      "new-message": "Nova mensagem enviada",
+      "message-edited": "Mensagem editada",
+      "message-deleted": "Mensagem excluída",
+      "user-typing": "Usuário digitando",
+      "user-online": "Usuário ficou online",
+      "user-offline": "Usuário ficou offline",
+      "notification": "Nova notificação"
+    }
+  },
+  "middlewares": {
+    "cors": "Configuração de CORS para frontend",
+    "helmet": "Segurança HTTP headers",
+    "morgan": "Log de requisições",
+    "rateLimit": "Rate limiting por IP/usuário",
+    "auth": "Autenticação JWT",
+    "compression": "Compressão gzip",
+    "multer": "Upload de arquivos"
+  }
+}

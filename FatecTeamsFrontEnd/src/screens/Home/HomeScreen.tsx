@@ -86,7 +86,7 @@ const HomeScreen: React.FC = () => {
         {/* Quick Stats */}
         <SlideUpView delay={200} style={styles.statsSection}>
           <ScaleView delay={300}>
-            <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+            <View style={[styles.statCard, { backgroundColor: theme.colors.card,  minWidth: 100 }]}>
               <View style={[styles.statIcon, { backgroundColor: `${theme.colors.primary}20` }]}>
                 <Ionicons name="people" size={20} color={theme.colors.primary} />
               </View>
@@ -98,7 +98,7 @@ const HomeScreen: React.FC = () => {
           </ScaleView>
 
           <ScaleView delay={400}>
-            <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+            <View style={[styles.statCard, { backgroundColor: theme.colors.card, minWidth: 100 }]}>
               <View style={[styles.statIcon, { backgroundColor: `${theme.colors.success}20` }]}>
                 <Ionicons name="checkmark-circle" size={20} color={theme.colors.success} />
               </View>
@@ -108,7 +108,7 @@ const HomeScreen: React.FC = () => {
           </ScaleView>
 
           <ScaleView delay={500}>
-            <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+            <View style={[styles.statCard, { backgroundColor: theme.colors.card,  minWidth: 100 }]}>
               <View style={[styles.statIcon, { backgroundColor: `${theme.colors.warning}20` }]}>
                 <Ionicons name="calendar" size={20} color={theme.colors.warning} />
               </View>
@@ -215,14 +215,14 @@ const HomeScreen: React.FC = () => {
 
         {/* Quick Actions */}
         <FadeInView delay={1200} style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text, marginBottom: 10 }]}>
             Ações Rápidas
           </Text>
           
           <SlideUpView delay={1300} style={styles.quickActionsContainer}>
             <ScaleView delay={1400}>
               <TouchableOpacity 
-                style={[styles.quickActionButton, { backgroundColor: theme.colors.primary }]}
+                style={[styles.quickActionButton, { backgroundColor: theme.colors.primary, minWidth: 100 }]}
                 onPress={handleGrupos}
               >
                 <Ionicons name="people-outline" size={24} color="#FFFFFF" />
@@ -231,14 +231,14 @@ const HomeScreen: React.FC = () => {
             </ScaleView>
 
             <ScaleView delay={1500}>
-              <TouchableOpacity style={[styles.quickActionButton, { backgroundColor: theme.colors.success }]}>
+              <TouchableOpacity style={[styles.quickActionButton, { backgroundColor: theme.colors.success, minWidth: 100 }]}>
                 <Ionicons name="add-outline" size={24} color="#FFFFFF" />
                 <Text style={styles.quickActionText}>Nova Tarefa</Text>
               </TouchableOpacity>
             </ScaleView>
 
             <ScaleView delay={1600}>
-              <TouchableOpacity style={[styles.quickActionButton, { backgroundColor: theme.colors.warning }]}>
+              <TouchableOpacity style={[styles.quickActionButton, { backgroundColor: theme.colors.warning, minWidth: 100 }]}>
                 <Ionicons name="calendar-outline" size={24} color="#FFFFFF" />
                 <Text style={styles.quickActionText}>Novo Evento</Text>
               </TouchableOpacity>

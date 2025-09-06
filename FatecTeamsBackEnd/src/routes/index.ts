@@ -1,18 +1,25 @@
 import { Router } from 'express';
-import usuarioRoutes from './usuarioRoutes';
-import authRoutes from './authRoutes';
-import { GrupoController } from '../controllers/GrupoController';
-import { MensagemController } from '../controllers/MensagemController';
-import { TarefaController } from '../controllers/TarefaController';
 import { ArquivoController } from '../controllers/ArquivoController';
 import { ConviteController } from '../controllers/ConviteController';
-import { NotificacaoController } from '../controllers/NotificacaoController';
 import { EventoController } from '../controllers/EventoController';
+import { GrupoController } from '../controllers/GrupoController';
+import { HealthController } from '../controllers/HealthController';
 import { HistoricoAtividadeController } from '../controllers/HistoricoAtividadeController';
+import { MensagemController } from '../controllers/MensagemController';
+import { NotificacaoController } from '../controllers/NotificacaoController';
 import { RelatorioController } from '../controllers/RelatorioController';
+import { TarefaController } from '../controllers/TarefaController';
 import { authenticateToken } from '../middlewares/AuthMiddleware';
+import authRoutes from './authRoutes';
+import usuarioRoutes from './usuarioRoutes';
 
 const router = Router();
+
+// ============================================
+// HEALTH CHECK ROUTES (sem autenticação)
+// ============================================
+router.get('/health', HealthController.healthCheck);
+router.get('/health/detailed', HealthController.detailedHealthCheck);
 
 // Instanciar controllers
 const grupoController = new GrupoController();

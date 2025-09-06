@@ -1,22 +1,23 @@
-import express, { Application } from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
 import compression from 'compression';
-import { createServer } from 'http';
-import { Server as SocketIOServer } from 'socket.io';
+import cors from 'cors';
 import dotenv from 'dotenv';
+import express, { Application } from 'express';
+import helmet from 'helmet';
+import { createServer } from 'http';
+import morgan from 'morgan';
+import { Server as SocketIOServer } from 'socket.io';
 
 import { config } from './config';
+import { AutoMigration } from './config/AutoMigration';
 import { DatabaseConfig } from './config/database';
-import routes from './routes';
-import { ErrorMiddleware } from './middlewares/ErrorMiddleware';
-import { RateLimitMiddleware } from './middlewares/RateLimitMiddleware';
-import { LoggingMiddleware } from './middlewares/LoggingMiddleware';
 import { ApiInterceptorMiddleware } from './middlewares/ApiInterceptorMiddleware';
+import { ErrorMiddleware } from './middlewares/ErrorMiddleware';
+import { LoggingMiddleware } from './middlewares/LoggingMiddleware';
+import { RateLimitMiddleware } from './middlewares/RateLimitMiddleware';
+import routes from './routes';
 import { WebSocketService } from './services/WebSocketService';
-import { Logger } from './utils/Logger';
 import './types/socket'; // Importar extensão de tipos do Socket
+import { Logger } from './utils/Logger';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -317,6 +318,9 @@ export class App {
             // Testar conexão com banco
             await this.testDatabaseConnection();
 
+            // Executar migrations automáticas (se habilitado)
+            await this.runAutoMigrations();
+
             // Iniciar servidor
             this.server.listen(config.PORT, config.HOST, () => {
                 console.log('=================================');
@@ -332,6 +336,21 @@ export class App {
         } catch (error) {
             console.error('Erro ao iniciar servidor:', error);
             process.exit(1);
+        }
+    }
+
+    // ============================================
+    // EXECUTAR AUTO-MIGRATIONS
+    // ============================================
+    
+    private async runAutoMigrations(): Promise<void> {
+        try {
+            const autoMigration = new AutoMigration();
+            await autoMigration.runOnStartup();
+        } catch (error) {
+            Logger.error('❌ Erro durante auto-migration:', error);
+            // Re-throw para que o servidor não inicie com migrations pendentes
+            throw error;
         }
     }
 

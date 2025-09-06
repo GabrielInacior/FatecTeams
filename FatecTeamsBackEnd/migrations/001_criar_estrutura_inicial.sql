@@ -13,38 +13,74 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- ============================================
 
 -- Enum para provedores OAuth
-CREATE TYPE enum_provedor_oauth AS ENUM ('google', 'microsoft');
+DO $$ BEGIN
+    CREATE TYPE enum_provedor_oauth AS ENUM ('google', 'microsoft');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- Enum para tipos de grupo
-CREATE TYPE enum_tipo_grupo AS ENUM ('publico', 'privado', 'secreto');
+DO $$ BEGIN
+    CREATE TYPE enum_tipo_grupo AS ENUM ('publico', 'privado', 'secreto');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- Enum para níveis de permissão
-CREATE TYPE enum_nivel_permissao AS ENUM ('admin', 'moderador', 'membro', 'visitante');
+DO $$ BEGIN
+    CREATE TYPE enum_nivel_permissao AS ENUM ('admin', 'moderador', 'membro', 'visitante');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- Enum para tipos de mensagem
-CREATE TYPE enum_tipo_mensagem AS ENUM ('texto', 'arquivo', 'imagem', 'sistema');
+DO $$ BEGIN
+    CREATE TYPE enum_tipo_mensagem AS ENUM ('texto', 'arquivo', 'imagem', 'sistema');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- Enum para status de tarefa
-CREATE TYPE enum_status_tarefa AS ENUM ('pendente', 'em_andamento', 'concluida', 'cancelada');
+DO $$ BEGIN
+    CREATE TYPE enum_status_tarefa AS ENUM ('pendente', 'em_andamento', 'concluida', 'cancelada');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- Enum para prioridade de tarefa
-CREATE TYPE enum_prioridade_tarefa AS ENUM ('baixa', 'media', 'alta');
+DO $$ BEGIN
+    CREATE TYPE enum_prioridade_tarefa AS ENUM ('baixa', 'media', 'alta');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- Enum para tipos de evento
-CREATE TYPE enum_tipo_evento AS ENUM ('reuniao', 'estudo', 'prova', 'apresentacao', 'outro');
+DO $$ BEGIN
+    CREATE TYPE enum_tipo_evento AS ENUM ('reuniao', 'estudo', 'prova', 'apresentacao', 'outro');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- Enum para tipos de notificação
-CREATE TYPE enum_tipo_notificacao AS ENUM ('mensagem', 'convite', 'tarefa', 'evento', 'sistema');
+DO $$ BEGIN
+    CREATE TYPE enum_tipo_notificacao AS ENUM ('mensagem', 'convite', 'tarefa', 'evento', 'sistema');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- Enum para status de convite
-CREATE TYPE enum_status_convite AS ENUM ('pendente', 'aceito', 'recusado', 'expirado');
+DO $$ BEGIN
+    CREATE TYPE enum_status_convite AS ENUM ('pendente', 'aceito', 'recusado', 'expirado');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- ============================================
 -- TABELAS PRINCIPAIS
 -- ============================================
 
 -- Tabela de usuários
-CREATE TABLE usuarios (
+CREATE TABLE IF NOT EXISTS usuarios (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     nome VARCHAR(100) NOT NULL,
     email VARCHAR(150) NOT NULL UNIQUE,
@@ -61,7 +97,7 @@ CREATE TABLE usuarios (
 );
 
 -- Tabela de provedores OAuth
-CREATE TABLE provedores_oauth (
+CREATE TABLE IF NOT EXISTS provedores_oauth (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
     provedor enum_provedor_oauth NOT NULL,
@@ -76,7 +112,7 @@ CREATE TABLE provedores_oauth (
 );
 
 -- Tabela de grupos
-CREATE TABLE grupos (
+CREATE TABLE IF NOT EXISTS grupos (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     nome VARCHAR(100) NOT NULL,
     descricao TEXT,
@@ -92,7 +128,7 @@ CREATE TABLE grupos (
 );
 
 -- Tabela de membros do grupo
-CREATE TABLE membros_grupo (
+CREATE TABLE IF NOT EXISTS membros_grupo (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     grupo_id UUID NOT NULL REFERENCES grupos(id) ON DELETE CASCADE,
     usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -105,7 +141,7 @@ CREATE TABLE membros_grupo (
 );
 
 -- Tabela de arquivos
-CREATE TABLE arquivos (
+CREATE TABLE IF NOT EXISTS arquivos (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     nome_original VARCHAR(255) NOT NULL,
     nome_arquivo VARCHAR(255) NOT NULL,
@@ -121,7 +157,7 @@ CREATE TABLE arquivos (
 );
 
 -- Tabela de mensagens
-CREATE TABLE mensagens (
+CREATE TABLE IF NOT EXISTS mensagens (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     grupo_id UUID NOT NULL REFERENCES grupos(id) ON DELETE CASCADE,
     remetente_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -140,7 +176,7 @@ CREATE TABLE mensagens (
 );
 
 -- Tabela de tarefas
-CREATE TABLE tarefas (
+CREATE TABLE IF NOT EXISTS tarefas (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     grupo_id UUID NOT NULL REFERENCES grupos(id) ON DELETE CASCADE,
     criador_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -156,7 +192,7 @@ CREATE TABLE tarefas (
 );
 
 -- Tabela de atribuições de tarefa
-CREATE TABLE atribuicoes_tarefa (
+CREATE TABLE IF NOT EXISTS atribuicoes_tarefa (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tarefa_id UUID NOT NULL REFERENCES tarefas(id) ON DELETE CASCADE,
     usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -167,7 +203,7 @@ CREATE TABLE atribuicoes_tarefa (
 );
 
 -- Tabela de eventos do calendário
-CREATE TABLE eventos_calendario (
+CREATE TABLE IF NOT EXISTS eventos_calendario (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     grupo_id UUID NOT NULL REFERENCES grupos(id) ON DELETE CASCADE,
     criador_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -184,7 +220,7 @@ CREATE TABLE eventos_calendario (
 );
 
 -- Tabela de convites para grupo
-CREATE TABLE convites_grupo (
+CREATE TABLE IF NOT EXISTS convites_grupo (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     grupo_id UUID NOT NULL REFERENCES grupos(id) ON DELETE CASCADE,
     convidado_por UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -200,7 +236,7 @@ CREATE TABLE convites_grupo (
 );
 
 -- Tabela de notificações
-CREATE TABLE notificacoes (
+CREATE TABLE IF NOT EXISTS notificacoes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
     titulo VARCHAR(200) NOT NULL,
@@ -215,7 +251,7 @@ CREATE TABLE notificacoes (
 );
 
 -- Tabela de histórico de atividades
-CREATE TABLE historico_atividades (
+CREATE TABLE IF NOT EXISTS historico_atividades (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
     grupo_id UUID REFERENCES grupos(id) ON DELETE CASCADE,
@@ -232,76 +268,76 @@ CREATE TABLE historico_atividades (
 -- ============================================
 
 -- Índices para usuarios
-CREATE INDEX idx_usuarios_email ON usuarios(email);
-CREATE INDEX idx_usuarios_status_ativo ON usuarios(status_ativo);
-CREATE INDEX idx_usuarios_data_criacao ON usuarios(data_criacao);
+CREATE INDEX IF NOT EXISTS idx_usuarios_email ON usuarios(email);
+CREATE INDEX IF NOT EXISTS idx_usuarios_status_ativo ON usuarios(status_ativo);
+CREATE INDEX IF NOT EXISTS idx_usuarios_data_criacao ON usuarios(data_criacao);
 
 -- Índices para provedores_oauth
-CREATE INDEX idx_provedores_oauth_usuario_id ON provedores_oauth(usuario_id);
-CREATE INDEX idx_provedores_oauth_provedor_id ON provedores_oauth(provedor, provedor_id);
+CREATE INDEX IF NOT EXISTS idx_provedores_oauth_usuario_id ON provedores_oauth(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_provedores_oauth_provedor_id ON provedores_oauth(provedor, provedor_id);
 
 -- Índices para grupos
-CREATE INDEX idx_grupos_criador_id ON grupos(criador_id);
-CREATE INDEX idx_grupos_codigo_acesso ON grupos(codigo_acesso);
-CREATE INDEX idx_grupos_tipo ON grupos(tipo_grupo);
-CREATE INDEX idx_grupos_data_criacao ON grupos(data_criacao);
+CREATE INDEX IF NOT EXISTS idx_grupos_criador_id ON grupos(criador_id);
+CREATE INDEX IF NOT EXISTS idx_grupos_codigo_acesso ON grupos(codigo_acesso);
+CREATE INDEX IF NOT EXISTS idx_grupos_tipo ON grupos(tipo_grupo);
+CREATE INDEX IF NOT EXISTS idx_grupos_data_criacao ON grupos(data_criacao);
 
 -- Índices para membros_grupo
-CREATE INDEX idx_membros_grupo_grupo_id ON membros_grupo(grupo_id);
-CREATE INDEX idx_membros_grupo_usuario_id ON membros_grupo(usuario_id);
-CREATE INDEX idx_membros_grupo_ativo ON membros_grupo(ativo);
-CREATE INDEX idx_membros_grupo_nivel_permissao ON membros_grupo(nivel_permissao);
+CREATE INDEX IF NOT EXISTS idx_membros_grupo_grupo_id ON membros_grupo(grupo_id);
+CREATE INDEX IF NOT EXISTS idx_membros_grupo_usuario_id ON membros_grupo(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_membros_grupo_ativo ON membros_grupo(ativo);
+CREATE INDEX IF NOT EXISTS idx_membros_grupo_nivel_permissao ON membros_grupo(nivel_permissao);
 
 -- Índices para mensagens
-CREATE INDEX idx_mensagens_grupo_id ON mensagens(grupo_id);
-CREATE INDEX idx_mensagens_remetente_id ON mensagens(remetente_id);
-CREATE INDEX idx_mensagens_data_envio ON mensagens(data_envio);
-CREATE INDEX idx_mensagens_tipo ON mensagens(tipo_mensagem);
-CREATE INDEX idx_mensagens_arquivo_id ON mensagens(arquivo_id);
-CREATE INDEX idx_mensagens_pai ON mensagens(mensagem_pai_id);
+CREATE INDEX IF NOT EXISTS idx_mensagens_grupo_id ON mensagens(grupo_id);
+CREATE INDEX IF NOT EXISTS idx_mensagens_remetente_id ON mensagens(remetente_id);
+CREATE INDEX IF NOT EXISTS idx_mensagens_data_envio ON mensagens(data_envio);
+CREATE INDEX IF NOT EXISTS idx_mensagens_tipo ON mensagens(tipo_mensagem);
+CREATE INDEX IF NOT EXISTS idx_mensagens_arquivo_id ON mensagens(arquivo_id);
+CREATE INDEX IF NOT EXISTS idx_mensagens_pai ON mensagens(mensagem_pai_id);
 
 -- Índices para arquivos
-CREATE INDEX idx_arquivos_enviado_por ON arquivos(enviado_por);
-CREATE INDEX idx_arquivos_grupo_id ON arquivos(grupo_id);
-CREATE INDEX idx_arquivos_data_upload ON arquivos(data_upload);
-CREATE INDEX idx_arquivos_tipo_mime ON arquivos(tipo_mime);
+CREATE INDEX IF NOT EXISTS idx_arquivos_enviado_por ON arquivos(enviado_por);
+CREATE INDEX IF NOT EXISTS idx_arquivos_grupo_id ON arquivos(grupo_id);
+CREATE INDEX IF NOT EXISTS idx_arquivos_data_upload ON arquivos(data_upload);
+CREATE INDEX IF NOT EXISTS idx_arquivos_tipo_mime ON arquivos(tipo_mime);
 
 -- Índices para tarefas
-CREATE INDEX idx_tarefas_grupo_id ON tarefas(grupo_id);
-CREATE INDEX idx_tarefas_criador_id ON tarefas(criador_id);
-CREATE INDEX idx_tarefas_status ON tarefas(status);
-CREATE INDEX idx_tarefas_prioridade ON tarefas(prioridade);
-CREATE INDEX idx_tarefas_data_vencimento ON tarefas(data_vencimento);
+CREATE INDEX IF NOT EXISTS idx_tarefas_grupo_id ON tarefas(grupo_id);
+CREATE INDEX IF NOT EXISTS idx_tarefas_criador_id ON tarefas(criador_id);
+CREATE INDEX IF NOT EXISTS idx_tarefas_status ON tarefas(status);
+CREATE INDEX IF NOT EXISTS idx_tarefas_prioridade ON tarefas(prioridade);
+CREATE INDEX IF NOT EXISTS idx_tarefas_data_vencimento ON tarefas(data_vencimento);
 
 -- Índices para atribuicoes_tarefa
-CREATE INDEX idx_atribuicoes_tarefa_tarefa_id ON atribuicoes_tarefa(tarefa_id);
-CREATE INDEX idx_atribuicoes_tarefa_usuario_id ON atribuicoes_tarefa(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_atribuicoes_tarefa_tarefa_id ON atribuicoes_tarefa(tarefa_id);
+CREATE INDEX IF NOT EXISTS idx_atribuicoes_tarefa_usuario_id ON atribuicoes_tarefa(usuario_id);
 
 -- Índices para eventos_calendario
-CREATE INDEX idx_eventos_calendario_grupo_id ON eventos_calendario(grupo_id);
-CREATE INDEX idx_eventos_calendario_criador_id ON eventos_calendario(criador_id);
-CREATE INDEX idx_eventos_calendario_data_inicio ON eventos_calendario(data_inicio);
-CREATE INDEX idx_eventos_calendario_tipo ON eventos_calendario(tipo_evento);
+CREATE INDEX IF NOT EXISTS idx_eventos_calendario_grupo_id ON eventos_calendario(grupo_id);
+CREATE INDEX IF NOT EXISTS idx_eventos_calendario_criador_id ON eventos_calendario(criador_id);
+CREATE INDEX IF NOT EXISTS idx_eventos_calendario_data_inicio ON eventos_calendario(data_inicio);
+CREATE INDEX IF NOT EXISTS idx_eventos_calendario_tipo ON eventos_calendario(tipo_evento);
 
 -- Índices para convites_grupo
-CREATE INDEX idx_convites_grupo_grupo_id ON convites_grupo(grupo_id);
-CREATE INDEX idx_convites_grupo_convidado_por ON convites_grupo(convidado_por);
-CREATE INDEX idx_convites_grupo_email ON convites_grupo(email_convidado);
-CREATE INDEX idx_convites_grupo_codigo ON convites_grupo(codigo_convite);
-CREATE INDEX idx_convites_grupo_status ON convites_grupo(status);
-CREATE INDEX idx_convites_grupo_data_expiracao ON convites_grupo(data_expiracao);
+CREATE INDEX IF NOT EXISTS idx_convites_grupo_grupo_id ON convites_grupo(grupo_id);
+CREATE INDEX IF NOT EXISTS idx_convites_grupo_convidado_por ON convites_grupo(convidado_por);
+CREATE INDEX IF NOT EXISTS idx_convites_grupo_email ON convites_grupo(email_convidado);
+CREATE INDEX IF NOT EXISTS idx_convites_grupo_codigo ON convites_grupo(codigo_convite);
+CREATE INDEX IF NOT EXISTS idx_convites_grupo_status ON convites_grupo(status);
+CREATE INDEX IF NOT EXISTS idx_convites_grupo_data_expiracao ON convites_grupo(data_expiracao);
 
 -- Índices para notificacoes
-CREATE INDEX idx_notificacoes_usuario_id ON notificacoes(usuario_id);
-CREATE INDEX idx_notificacoes_tipo ON notificacoes(tipo);
-CREATE INDEX idx_notificacoes_lida ON notificacoes(lida);
-CREATE INDEX idx_notificacoes_data_criacao ON notificacoes(data_criacao);
+CREATE INDEX IF NOT EXISTS idx_notificacoes_usuario_id ON notificacoes(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_notificacoes_tipo ON notificacoes(tipo);
+CREATE INDEX IF NOT EXISTS idx_notificacoes_lida ON notificacoes(lida);
+CREATE INDEX IF NOT EXISTS idx_notificacoes_data_criacao ON notificacoes(data_criacao);
 
 -- Índices para historico_atividades
-CREATE INDEX idx_historico_atividades_usuario_id ON historico_atividades(usuario_id);
-CREATE INDEX idx_historico_atividades_grupo_id ON historico_atividades(grupo_id);
-CREATE INDEX idx_historico_atividades_acao ON historico_atividades(acao);
-CREATE INDEX idx_historico_atividades_data_acao ON historico_atividades(data_acao);
+CREATE INDEX IF NOT EXISTS idx_historico_atividades_usuario_id ON historico_atividades(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_historico_atividades_grupo_id ON historico_atividades(grupo_id);
+CREATE INDEX IF NOT EXISTS idx_historico_atividades_acao ON historico_atividades(acao);
+CREATE INDEX IF NOT EXISTS idx_historico_atividades_data_acao ON historico_atividades(data_acao);
 
 -- ============================================
 -- TRIGGERS PARA ATUALIZAR data_atualizacao

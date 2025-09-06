@@ -5,7 +5,7 @@
             "name": "🚀 Webapp - Debug Backend",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/src/server.ts",
+            "program": "${workspaceFolder}/FatecTeamsBackEnd/src/server.ts",
             "args": [],
             "runtimeArgs": [
                 "-r",
@@ -13,12 +13,12 @@
                 "-r",
                 "dotenv/config"
             ],
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/FatecTeamsBackEnd",
             "env": {
                 "NODE_ENV": "development",
-                "TS_NODE_PROJECT": "${workspaceFolder}/tsconfig.json"
+                "TS_NODE_PROJECT": "${workspaceFolder}/FatecTeamsBackEnd/tsconfig.json"
             },
-            "envFile": "${workspaceFolder}/.env",
+            "envFile": "${workspaceFolder}/FatecTeamsBackEnd/.env",
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
             "sourceMaps": true,
@@ -28,28 +28,28 @@
                 "node_modules/**"
             ],
             "resolveSourceMapLocations": [
-                "${workspaceFolder}/**",
+                "${workspaceFolder}/FatecTeamsBackEnd/**",
                 "!**/node_modules/**"
             ],
             "outFiles": [
-                "${workspaceFolder}/dist/**/*.js"
+                "${workspaceFolder}/FatecTeamsBackEnd/dist/**/*.js"
             ]
         },
         {
             "name": "🔧 Webapp - Debug with Nodemon",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/node_modules/nodemon/bin/nodemon.js",
+            "program": "${workspaceFolder}/FatecTeamsBackEnd/node_modules/nodemon/bin/nodemon.js",
             "args": [
                 "--exec",
                 "ts-node src/server.ts"
             ],
             "runtimeArgs": [],
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/FatecTeamsBackEnd",
             "env": {
                 "NODE_ENV": "development"
             },
-            "envFile": "${workspaceFolder}/.env",
+            "envFile": "${workspaceFolder}/FatecTeamsBackEnd/.env",
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
             "sourceMaps": true,
@@ -59,7 +59,7 @@
                 "node_modules/**"
             ],
             "resolveSourceMapLocations": [
-                "${workspaceFolder}/**",
+                "${workspaceFolder}/FatecTeamsBackEnd/**",
                 "!**/node_modules/**"
             ]
         },
@@ -67,17 +67,17 @@
             "name": "🧪 Webapp - Debug Tests",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/node_modules/jest/bin/jest.js",
+            "program": "${workspaceFolder}/FatecTeamsBackEnd/node_modules/jest/bin/jest.js",
             "args": [
                 "--runInBand",
                 "--detectOpenHandles",
                 "--forceExit"
             ],
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/FatecTeamsBackEnd",
             "env": {
                 "NODE_ENV": "test"
             },
-            "envFile": "${workspaceFolder}/.env.test",
+            "envFile": "${workspaceFolder}/FatecTeamsBackEnd/.env.test",
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
             "sourceMaps": true,
@@ -92,7 +92,7 @@
             "request": "attach",
             "port": 9229,
             "address": "localhost",
-            "localRoot": "${workspaceFolder}",
+            "localRoot": "${workspaceFolder}/FatecTeamsBackEnd",
             "remoteRoot": null,
             "skipFiles": [
                 "<node_internals>/**",
@@ -100,7 +100,7 @@
             ],
             "sourceMaps": true,
             "resolveSourceMapLocations": [
-                "${workspaceFolder}/**",
+                "${workspaceFolder}/FatecTeamsBackEnd/**",
                 "!**/node_modules/**"
             ]
         },
@@ -108,13 +108,13 @@
             "name": "🚀 Webapp - Debug Build Production",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/dist/server.js",
+            "program": "${workspaceFolder}/FatecTeamsBackEnd/dist/server.js",
             "args": [],
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/FatecTeamsBackEnd",
             "env": {
                 "NODE_ENV": "production"
             },
-            "envFile": "${workspaceFolder}/.env",
+            "envFile": "${workspaceFolder}/FatecTeamsBackEnd/.env",
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
             "sourceMaps": true,
@@ -124,7 +124,7 @@
             ],
             "preLaunchTask": "build",
             "outFiles": [
-                "${workspaceFolder}/dist/**/*.js"
+                "${workspaceFolder}/FatecTeamsBackEnd/dist/**/*.js"
             ]
         }
     ],

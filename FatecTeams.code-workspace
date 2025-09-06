@@ -1,0 +1,65 @@
+{
+    "folders": [
+        {
+            "name": "🚀 Backend",
+            "path": "./FatecTeamsBackEnd"
+        },
+        {
+            "name": "📱 Frontend", 
+            "path": "./FatecTeamsFrontEnd"
+        }
+    ],
+    "settings": {
+        "typescript.preferences.includePackageJsonAutoImports": "auto",
+        "typescript.suggest.autoImports": true,
+        "typescript.updateImportsOnFileMove.enabled": "always",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit",
+            "source.fixAll.eslint": "explicit"
+        },
+        "files.exclude": {
+            "**/node_modules": true,
+            "**/dist": true,
+            "**/.git": true,
+            "**/.DS_Store": true,
+            "**/Thumbs.db": true
+        },
+        "search.exclude": {
+            "**/node_modules": true,
+            "**/dist": true,
+            "**/.git": true
+        },
+        "debug.console.fontSize": 14,
+        "debug.console.wordWrap": false,
+        "debug.inlineValues": "auto",
+        "debug.showBreakpointsInOverviewRuler": true,
+        "terminal.integrated.env.windows": {
+            "NODE_ENV": "development"
+        },
+        "terminal.integrated.env.osx": {
+            "NODE_ENV": "development"  
+        },
+        "terminal.integrated.env.linux": {
+            "NODE_ENV": "development"
+        }
+    },
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "🚀 Debug Backend",
+                "type": "node",
+                "request": "launch",
+                "program": "${workspaceFolder}/FatecTeamsBackEnd/src/server.ts",
+                "cwd": "${workspaceFolder}/FatecTeamsBackEnd",
+                "runtimeArgs": ["-r", "ts-node/register", "-r", "dotenv/config"],
+                "env": {
+                    "NODE_ENV": "development"
+                },
+                "envFile": "${workspaceFolder}/FatecTeamsBackEnd/.env",
+                "sourceMaps": true,
+                "console": "integratedTerminal"
+            }
+        ]
+    }
+}

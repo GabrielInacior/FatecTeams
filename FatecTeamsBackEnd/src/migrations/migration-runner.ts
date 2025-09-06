@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { Pool } from 'pg';
 import { Logger } from '../utils/Logger';
 
@@ -7,6 +8,7 @@ interface Migration {
   id: string;
   filename: string;
   sql: string;
+  checksum: string;
   applied_at?: Date;
 }
 
@@ -30,6 +32,13 @@ class MigrationRunner {
   }
 
   /**
+   * Calcula o checksum MD5 do conteúdo de uma migration
+   */
+  private calculateChecksum(content: string): string {
+    return crypto.createHash('md5').update(content).digest('hex');
+  }
+
+  /**
    * Cria a tabela de controle de migrations se não existir
    */
   private async createMigrationsTable(): Promise<void> {
@@ -38,7 +47,8 @@ class MigrationRunner {
         id SERIAL PRIMARY KEY,
         filename VARCHAR(255) NOT NULL UNIQUE,
         applied_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        checksum VARCHAR(64)
+        checksum VARCHAR(64),
+        execution_time_ms INTEGER DEFAULT 0
       );
     `;
 
@@ -80,11 +90,13 @@ class MigrationRunner {
         const filePath = path.join(this.migrationsPath, filename);
         const sql = fs.readFileSync(filePath, 'utf8');
         const id = filename.replace('.sql', '');
+        const checksum = this.calculateChecksum(sql.trim());
         
         migrations.push({
           id,
           filename,
-          sql: sql.trim()
+          sql: sql.trim(),
+          checksum
         });
       }
       
@@ -99,18 +111,11 @@ class MigrationRunner {
   }
 
   /**
-   * Calcula checksum do conteúdo da migration
-   */
-  private calculateChecksum(content: string): string {
-    const crypto = require('crypto');
-    return crypto.createHash('sha256').update(content).digest('hex');
-  }
-
-  /**
    * Aplica uma migration individual
    */
   private async applyMigration(migration: Migration): Promise<void> {
     const client = await this.pool.connect();
+    const startTime = Date.now();
     
     try {
       await client.query('BEGIN');
@@ -120,15 +125,16 @@ class MigrationRunner {
       // Executar SQL da migration
       await client.query(migration.sql);
       
+      const executionTime = Date.now() - startTime;
+      
       // Registrar migration como aplicada
-      const checksum = this.calculateChecksum(migration.sql);
       await client.query(
-        'INSERT INTO migrations (filename, checksum) VALUES ($1, $2)',
-        [migration.filename, checksum]
+        'INSERT INTO migrations (filename, checksum, execution_time_ms) VALUES ($1, $2, $3)',
+        [migration.filename, migration.checksum, executionTime]
       );
       
       await client.query('COMMIT');
-      Logger.info(`✅ Migration aplicada com sucesso: ${migration.filename}`);
+      Logger.info(`✅ Migration aplicada com sucesso: ${migration.filename} (${executionTime}ms)`);
       
     } catch (error) {
       await client.query('ROLLBACK');

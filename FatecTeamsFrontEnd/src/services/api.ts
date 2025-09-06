@@ -3,11 +3,10 @@ import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { ApiResponse } from '../types';
+import { appConfig } from '../config/app';
 
-// Configuração base da API
-const API_BASE_URL = __DEV__ 
-  ? 'http://localhost:3000/api' // URL de desenvolvimento
-  : 'https://your-production-api.com/api'; // URL de produção
+// Usar configuração centralizada
+const API_BASE_URL = appConfig.API_BASE_URL;
 
 // Chaves para armazenamento
 const STORAGE_KEYS = {
@@ -49,7 +48,7 @@ class ApiService {
   constructor() {
     this.api = axios.create({
       baseURL: API_BASE_URL,
-      timeout: 10000,
+      timeout: appConfig.TIMEOUT_REQUEST,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -75,8 +74,8 @@ class ApiService {
           console.error('Erro ao obter token de acesso:', error);
         }
         
-        // Log da requisição em desenvolvimento
-        if (__DEV__) {
+        // Log da requisição se debug estiver habilitado
+        if (appConfig.DEBUG_MODE) {
           console.log(`🔵 ${config.method?.toUpperCase()} ${config.url}`, {
             data: config.data,
             params: config.params,
@@ -93,8 +92,8 @@ class ApiService {
     // Response interceptor - lidar com respostas e erros
     this.api.interceptors.response.use(
       (response) => {
-        // Log da resposta em desenvolvimento
-        if (__DEV__) {
+        // Log da resposta se debug estiver habilitado
+        if (appConfig.DEBUG_MODE) {
           console.log(`🟢 ${response.status} ${response.config.url}`, response.data);
         }
         return response;
@@ -102,8 +101,8 @@ class ApiService {
       async (error: AxiosError) => {
         const originalRequest = error.config as any;
         
-        // Log do erro em desenvolvimento
-        if (__DEV__) {
+        // Log do erro se debug estiver habilitado
+        if (appConfig.DEBUG_MODE) {
           console.error(`🔴 ${error.response?.status} ${error.config?.url}`, {
             data: error.response?.data,
             message: error.message,

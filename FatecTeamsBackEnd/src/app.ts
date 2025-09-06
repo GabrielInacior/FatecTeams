@@ -13,6 +13,9 @@ import routes from './routes';
 import { ErrorMiddleware } from './middlewares/ErrorMiddleware';
 import { RateLimitMiddleware } from './middlewares/RateLimitMiddleware';
 import { LoggingMiddleware } from './middlewares/LoggingMiddleware';
+import { WebSocketService } from './services/WebSocketService';
+import { Logger } from './utils/Logger';
+import './types/socket'; // Importar extensão de tipos do Socket
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -22,11 +25,13 @@ export class App {
     public server: any;
     public io!: SocketIOServer;
     private db: DatabaseConfig;
+    private webSocketService: WebSocketService;
 
     constructor() {
         this.app = express();
         this.server = createServer(this.app);
         this.db = DatabaseConfig.getInstance();
+        this.webSocketService = WebSocketService.getInstance();
         
         this.initializeSocketIO();
         this.initializeMiddlewares();
@@ -141,57 +146,130 @@ export class App {
         this.io = new SocketIOServer(this.server, {
             cors: {
                 origin: config.frontend.allowedOrigins,
-                methods: ['GET', 'POST']
+                methods: ['GET', 'POST'],
+                credentials: true
             },
-            transports: ['websocket', 'polling']
+            transports: ['websocket', 'polling'],
+            pingTimeout: 60000,
+            pingInterval: 25000
         });
+
+        // Configurar WebSocketService
+        this.webSocketService.setIO(this.io);
 
         // Middleware de autenticação para Socket.IO
         this.io.use(async (socket, next) => {
             try {
                 const token = socket.handshake.auth.token;
                 if (!token) {
+                    Logger.websocket('Conexão rejeitada: Token não fornecido');
                     return next(new Error('Token não fornecido'));
                 }
 
-                // TODO: Validar token JWT aqui
+                // TODO: Implementar validação JWT
                 // const user = await validateSocketToken(token);
                 // socket.userId = user.id;
                 
+                Logger.websocket('Conexão WebSocket autenticada');
                 next();
             } catch (error) {
+                Logger.websocket('Erro de autenticação WebSocket:', error);
                 next(new Error('Token inválido'));
             }
         });
 
         // Eventos do Socket.IO
         this.io.on('connection', (socket) => {
-            console.log(`Cliente conectado: ${socket.id}`);
+            Logger.websocket(`Cliente conectado: ${socket.id}`);
+
+            // Evento de identificação do usuário
+            socket.on('identify-user', (data) => {
+                const { usuarioId } = data;
+                if (usuarioId) {
+                    socket.userId = usuarioId;
+                    this.webSocketService.adicionarUsuarioASala(socket.id, usuarioId);
+                    Logger.websocket(`Usuário ${usuarioId} identificado no socket ${socket.id}`);
+                }
+            });
 
             // Entrar em sala de grupo
             socket.on('join-group', (grupoId: string) => {
                 socket.join(`grupo-${grupoId}`);
-                console.log(`Cliente ${socket.id} entrou no grupo ${grupoId}`);
+                Logger.websocket(`Cliente ${socket.id} entrou no grupo ${grupoId}`);
+                
+                // Emitir para outros membros que usuário entrou
+                if (socket.userId) {
+                    socket.to(`grupo-${grupoId}`).emit('user-joined-group', {
+                        usuarioId: socket.userId,
+                        grupoId
+                    });
+                }
             });
 
             // Sair da sala de grupo
             socket.on('leave-group', (grupoId: string) => {
                 socket.leave(`grupo-${grupoId}`);
-                console.log(`Cliente ${socket.id} saiu do grupo ${grupoId}`);
+                Logger.websocket(`Cliente ${socket.id} saiu do grupo ${grupoId}`);
+                
+                // Emitir para outros membros que usuário saiu
+                if (socket.userId) {
+                    socket.to(`grupo-${grupoId}`).emit('user-left-group', {
+                        usuarioId: socket.userId,
+                        grupoId
+                    });
+                }
             });
 
             // Usuario digitando
             socket.on('user-typing', (data) => {
-                socket.to(`grupo-${data.grupoId}`).emit('user-typing', {
-                    usuarioId: data.usuarioId,
-                    nomeUsuario: data.nomeUsuario,
-                    grupoId: data.grupoId
-                });
+                const { grupoId, typing, nomeUsuario } = data;
+                if (socket.userId) {
+                    socket.to(`grupo-${grupoId}`).emit('user-typing', {
+                        usuarioId: socket.userId,
+                        nomeUsuario: nomeUsuario || 'Usuário',
+                        grupoId,
+                        typing
+                    });
+                }
+            });
+
+            // Solicitar status online
+            socket.on('request-online-users', (grupoId: string) => {
+                this.webSocketService.obterUsuariosConectados(grupoId)
+                    .then(usuarios => {
+                        socket.emit('online-users', {
+                            grupoId,
+                            usuarios
+                        });
+                    });
+            });
+
+            // Marcar mensagem como lida
+            socket.on('mark-message-read', (data) => {
+                const { grupoId, mensagemId } = data;
+                if (socket.userId) {
+                    socket.to(`grupo-${grupoId}`).emit('message-read', {
+                        usuarioId: socket.userId,
+                        mensagemId,
+                        grupoId
+                    });
+                }
             });
 
             // Desconexão
-            socket.on('disconnect', () => {
-                console.log(`Cliente desconectado: ${socket.id}`);
+            socket.on('disconnect', (reason) => {
+                Logger.websocket(`Cliente ${socket.id} desconectado: ${reason}`);
+                
+                // Notificar grupos sobre usuário offline
+                if (socket.userId) {
+                    // TODO: Buscar grupos do usuário e emitir status offline
+                    Logger.websocket(`Usuário ${socket.userId} desconectado`);
+                }
+            });
+
+            // Tratamento de erros do socket
+            socket.on('error', (error) => {
+                Logger.error('Erro no socket:', error);
             });
         });
     }

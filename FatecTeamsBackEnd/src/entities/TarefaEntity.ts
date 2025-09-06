@@ -67,8 +67,8 @@ export class TarefaEntity {
         }
 
         // Auto-assign para o criador se não especificado
-        if (!this.dados.assignado_para && this.dados.criado_por) {
-            this.dados.assignado_para = this.dados.criado_por;
+        if (!this.dados.assignado_para && this.dados.criador_id) {
+            this.dados.assignado_para = this.dados.criador_id;
         }
     }
 
@@ -119,7 +119,7 @@ export class TarefaEntity {
         if (!this.dados.grupo_id) {
             erros.push('ID do grupo é obrigatório');
         }
-        if (!this.dados.criado_por) {
+        if (!this.dados.criador_id) {
             erros.push('ID do criador é obrigatório');
         }
 
@@ -160,8 +160,8 @@ export class TarefaEntity {
             this.dados = {
                 ...dadosTarefa,
                 status: dadosTarefa.status || 'pendente',
-                criado_em: new Date(),
-                atualizado_em: new Date()
+                data_criacao: new Date(),
+                criador_id: dadosTarefa.criado_por
             };
 
             this.preRules();
@@ -177,7 +177,7 @@ export class TarefaEntity {
             const tarefaId = await this.tarefaRepository.criar(this.dados);
             
             // Registrar no histórico
-            await this.tarefaRepository.registrarMudancaStatus(tarefaId, this.dados.criado_por, 'nova', this.dados.status);
+            await this.tarefaRepository.registrarMudancaStatus(tarefaId, this.dados.criador_id, 'nova', this.dados.status);
             
             const tarefaSalva = await this.tarefaRepository.buscarPorId(tarefaId);
 

@@ -1,12 +1,15 @@
 import { Request, Response } from 'express';
 import { MensagemEntity, IMensagemCreate, IMensagemUpdate } from '../entities/MensagemEntity';
 import { AuthenticatedRequest } from '../types';
+import { WebSocketService } from '../services/WebSocketService';
 
 export class MensagemController {
     private mensagemEntity: MensagemEntity;
+    private webSocketService: WebSocketService;
 
     constructor() {
         this.mensagemEntity = new MensagemEntity();
+        this.webSocketService = WebSocketService.getInstance();
     }
 
     // ============================================
@@ -15,7 +18,7 @@ export class MensagemController {
 
     public criar = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
         try {
-            const { conteudo, tipo, arquivo_url, arquivo_nome, arquivo_tamanho, grupo_id, parent_message_id, mencionados } = req.body;
+            const { conteudo, tipo_mensagem, arquivo_id, grupo_id, mensagem_pai_id, mencionados } = req.body;
             const userId = req.user?.id;
 
             if (!userId) {
@@ -29,13 +32,11 @@ export class MensagemController {
 
             const dadosMensagem: IMensagemCreate = {
                 conteudo,
-                tipo: tipo || 'texto',
-                arquivo_url,
-                arquivo_nome,
-                arquivo_tamanho,
+                tipo_mensagem: tipo_mensagem || 'texto',
+                arquivo_id,
                 grupo_id,
-                usuario_id: userId,
-                parent_message_id,
+                remetente_id: userId,
+                mensagem_pai_id,
                 mencionados
             };
 
@@ -49,6 +50,14 @@ export class MensagemController {
                     timestamp: new Date().toISOString()
                 });
                 return;
+            }
+
+            // Emitir nova mensagem via WebSocket
+            if (resultado.mensagem) {
+                this.webSocketService.emitirNovaMensagem(grupo_id, {
+                    ...resultado.mensagem,
+                    remetente_nome: req.user?.nome || 'Usuário'
+                });
             }
 
             res.status(201).json({
@@ -128,6 +137,11 @@ export class MensagemController {
                 return;
             }
 
+            // Emitir mensagem editada via WebSocket
+            if (resultado.mensagem && resultado.mensagem.grupo_id) {
+                this.webSocketService.emitirMensagemEditada(resultado.mensagem.grupo_id, resultado.mensagem);
+            }
+
             res.status(200).json({
                 sucesso: true,
                 mensagem: 'Mensagem atualizada com sucesso',
@@ -159,6 +173,9 @@ export class MensagemController {
                 return;
             }
 
+            // Obter informações da mensagem antes de deletar
+            const mensagemInfo = await this.mensagemEntity.buscarPorId(id);
+            
             const resultado = await this.mensagemEntity.delete(id, userId);
 
             if (!resultado.sucesso) {
@@ -169,6 +186,11 @@ export class MensagemController {
                     timestamp: new Date().toISOString()
                 });
                 return;
+            }
+
+            // Emitir mensagem deletada via WebSocket
+            if (mensagemInfo.sucesso && mensagemInfo.mensagem?.grupo_id) {
+                this.webSocketService.emitirMensagemDeletada(mensagemInfo.mensagem.grupo_id, id);
             }
 
             res.status(200).json({

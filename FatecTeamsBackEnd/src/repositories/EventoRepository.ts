@@ -3,7 +3,7 @@ import { DatabaseConfig } from '../config/database';
 export interface IEvento {
     id?: string;
     grupo_id: string;
-    criado_por: string;
+    criador_id: string;  // Mudança de criado_por para criador_id para alinhar com migration
     titulo: string;
     descricao?: string;
     data_inicio: Date;
@@ -14,8 +14,8 @@ export interface IEvento {
     status?: 'agendado' | 'em_andamento' | 'concluido' | 'cancelado';
     recorrencia?: any;
     configuracoes?: any;
-    criado_em?: Date;
-    atualizado_em?: Date;
+    data_criacao?: Date;
+    data_atualizacao?: Date;
 }
 
 export interface IEventoParticipante {
@@ -50,7 +50,7 @@ export class EventoRepository {
         
         const result = await this.db.query(query, [
             evento.grupo_id,
-            evento.criado_por,
+            evento.criador_id,
             evento.titulo,
             evento.descricao || null,
             evento.data_inicio,
@@ -82,7 +82,7 @@ export class EventoRepository {
         return {
             id: evento.id,
             grupo_id: evento.grupo_id,
-            criado_por: evento.criador_id,
+            criador_id: evento.criador_id,
             titulo: evento.titulo,
             descricao: evento.descricao,
             data_inicio: evento.data_inicio,
@@ -93,8 +93,8 @@ export class EventoRepository {
             status: evento.status,
             recorrencia: evento.recorrencia,
             configuracoes: evento.configuracoes,
-            criado_em: evento.data_criacao,
-            atualizado_em: evento.data_atualizacao
+            data_criacao: evento.data_criacao,
+            data_atualizacao: evento.data_atualizacao
         };
     }
 
@@ -280,7 +280,7 @@ export class EventoRepository {
 
     async listarParticipantes(eventoId: string): Promise<any[]> {
         const query = `
-            SELECT ep.*, u.nome, u.email, u.avatar_url
+            SELECT ep.*, u.nome, u.email, u.foto_perfil
             FROM eventos_participantes ep
             JOIN usuarios u ON ep.usuario_id = u.id
             WHERE ep.evento_id = $1 AND u.deletado_em IS NULL

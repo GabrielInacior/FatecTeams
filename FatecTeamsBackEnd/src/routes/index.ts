@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import usuarioRoutes from './usuarioRoutes';
+import authRoutes from './authRoutes';
 import { GrupoController } from '../controllers/GrupoController';
 import { MensagemController } from '../controllers/MensagemController';
 import { TarefaController } from '../controllers/TarefaController';
 import { ArquivoController } from '../controllers/ArquivoController';
-import { AuthController } from '../controllers/AuthController';
 import { ConviteController } from '../controllers/ConviteController';
 import { NotificacaoController } from '../controllers/NotificacaoController';
 import { EventoController } from '../controllers/EventoController';
@@ -19,7 +19,6 @@ const grupoController = new GrupoController();
 const mensagemController = new MensagemController();
 const tarefaController = new TarefaController();
 const arquivoController = new ArquivoController();
-const authController = new AuthController();
 const conviteController = new ConviteController();
 const notificacaoController = new NotificacaoController();
 const eventoController = new EventoController();
@@ -28,17 +27,7 @@ const relatorioController = new RelatorioController();
 
 // Configurar rotas da API
 router.use('/usuarios', usuarioRoutes);
-
-// ============================================
-// ROTAS DE AUTENTICAÇÃO
-// ============================================
-
-router.post('/auth/refresh', authController.renovarToken);
-router.post('/auth/logout', authenticateToken, authController.logout);
-router.get('/auth/validate', authenticateToken, authController.validarToken);
-router.get('/auth/session', authenticateToken, authController.infoSessao);
-router.post('/auth/google', authController.loginGoogle);
-router.post('/auth/microsoft', authController.loginMicrosoft);
+router.use('/auth', authRoutes);
 
 // ============================================
 // ROTAS DE GRUPOS

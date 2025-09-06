@@ -3,13 +3,11 @@ import { v4 as uuidv4 } from 'uuid';
 
 export interface IMensagemCreate {
     conteudo: string;
-    tipo: 'texto' | 'arquivo' | 'imagem' | 'video' | 'audio' | 'link';
-    arquivo_url?: string;
-    arquivo_nome?: string;
-    arquivo_tamanho?: number;
+    tipo_mensagem: 'texto' | 'arquivo' | 'imagem' | 'sistema';
+    arquivo_id?: string;
     grupo_id: string;
-    usuario_id: string;
-    parent_message_id?: string;
+    remetente_id: string;
+    mensagem_pai_id?: string;
     mencionados?: string[];
 }
 
@@ -39,19 +37,15 @@ export class MensagemEntity {
             this.dados.conteudo = this.dados.conteudo.trim();
         }
 
-        if (this.dados.arquivo_nome) {
-            this.dados.arquivo_nome = this.dados.arquivo_nome.trim();
-        }
-
         if (this.dados.mencionados) {
             this.dados.mencionados = [...new Set(this.dados.mencionados)]; // Remove duplicatas
         }
 
-        if (this.dados.tipo === 'texto' && this.dados.conteudo && this.dados.conteudo.includes('http')) {
+        if (this.dados.tipo_mensagem === 'texto' && this.dados.conteudo && this.dados.conteudo.includes('http')) {
             // Auto-detectar links
             const urlRegex = /(https?:\/\/[^\s]+)/g;
             if (urlRegex.test(this.dados.conteudo)) {
-                this.dados.tipo = 'link';
+                // Mantém como texto com link
             }
         }
     }
@@ -65,7 +59,7 @@ export class MensagemEntity {
 
         // Validação do conteúdo
         if (!this.dados.conteudo || this.dados.conteudo.length === 0) {
-            if (this.dados.tipo === 'texto' || this.dados.tipo === 'link') {
+            if (this.dados.tipo_mensagem === 'texto') {
                 erros.push('Conteúdo da mensagem é obrigatório');
             }
         } else if (this.dados.conteudo.length > 4000) {
@@ -73,24 +67,15 @@ export class MensagemEntity {
         }
 
         // Validação do tipo
-        const tiposValidos = ['texto', 'arquivo', 'imagem', 'video', 'audio', 'link'];
-        if (!this.dados.tipo || !tiposValidos.includes(this.dados.tipo)) {
+        const tiposValidos = ['texto', 'arquivo', 'imagem', 'sistema'];
+        if (!this.dados.tipo_mensagem || !tiposValidos.includes(this.dados.tipo_mensagem)) {
             erros.push('Tipo de mensagem inválido');
         }
 
         // Validação para arquivos
-        if (['arquivo', 'imagem', 'video', 'audio'].includes(this.dados.tipo)) {
-            if (!this.dados.arquivo_url) {
-                erros.push('URL do arquivo é obrigatória para mensagens de arquivo');
-            }
-            if (!this.dados.arquivo_nome) {
-                erros.push('Nome do arquivo é obrigatório para mensagens de arquivo');
-            }
-            if (!this.dados.arquivo_tamanho || this.dados.arquivo_tamanho <= 0) {
-                erros.push('Tamanho do arquivo deve ser maior que zero');
-            }
-            if (this.dados.arquivo_tamanho && this.dados.arquivo_tamanho > 50 * 1024 * 1024) { // 50MB
-                erros.push('Arquivo não pode ser maior que 50MB');
+        if (['arquivo', 'imagem'].includes(this.dados.tipo_mensagem)) {
+            if (!this.dados.arquivo_id) {
+                erros.push('ID do arquivo é obrigatório para mensagens de arquivo');
             }
         }
 
@@ -98,8 +83,8 @@ export class MensagemEntity {
         if (!this.dados.grupo_id) {
             erros.push('ID do grupo é obrigatório');
         }
-        if (!this.dados.usuario_id) {
-            erros.push('ID do usuário é obrigatório');
+        if (!this.dados.remetente_id) {
+            erros.push('ID do remetente é obrigatório');
         }
 
         // Validação de menções
@@ -122,8 +107,7 @@ export class MensagemEntity {
             this.dados = {
                 ...dadosMensagem,
                 editado: false,
-                criado_em: new Date(),
-                atualizado_em: new Date()
+                data_envio: new Date()
             };
 
             this.preRules();

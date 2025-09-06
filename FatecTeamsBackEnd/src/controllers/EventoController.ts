@@ -58,7 +58,7 @@ export class EventoController {
             // Criar evento
             const eventoId = await this.eventoRepository.criar({
                 grupo_id,
-                criado_por: usuarioId,
+                criador_id: usuarioId,
                 titulo,
                 descricao: descricao || null,
                 data_inicio: new Date(data_inicio),
@@ -161,7 +161,7 @@ export class EventoController {
 
             // Verificar permissão (criador ou admin/moderador do grupo)
             const membro = await this.grupoRepository.verificarPermissao(evento.grupo_id, usuarioId);
-            const podeEditar = evento.criado_por === usuarioId ||
+            const podeEditar = evento.criador_id === usuarioId ||
                              (membro && (membro.nivel_permissao === 'admin' || membro.nivel_permissao === 'moderador'));
 
             if (!podeEditar) {
@@ -206,7 +206,7 @@ export class EventoController {
 
             // Verificar permissão
             const membro = await this.grupoRepository.verificarPermissao(evento.grupo_id, usuarioId);
-            const podeAdicionar = evento.criado_por === usuarioId ||
+            const podeAdicionar = evento.criador_id === usuarioId ||
                                  (membro && (membro.nivel_permissao === 'admin' || membro.nivel_permissao === 'moderador'));
 
             if (!podeAdicionar) {

@@ -8,14 +8,14 @@ export interface ITarefa {
     prioridade: 'baixa' | 'media' | 'alta' | 'urgente';
     data_vencimento?: Date;
     grupo_id: string;
-    criado_por: string;
+    criador_id: string;  // Alinhar com migration
     assignado_para?: string;
     etiquetas?: string[];
     estimativa_horas?: number;
     horas_trabalhadas?: number;
     anexos?: string[];
-    criado_em?: Date;
-    atualizado_em?: Date;
+    data_criacao?: Date;
+    deletado_em?: Date;
 }
 
 export interface IComentarioTarefa {
@@ -41,7 +41,7 @@ export class TarefaRepository {
         const query = `
             INSERT INTO tarefas (
                 titulo, descricao, status, prioridade, data_vencimento,
-                grupo_id, criado_por, assignado_para, etiquetas, 
+                grupo_id, criador_id, assignado_para, etiquetas, 
                 estimativa_horas, anexos
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
@@ -55,7 +55,7 @@ export class TarefaRepository {
             tarefa.prioridade,
             tarefa.data_vencimento || null,
             tarefa.grupo_id,
-            tarefa.criado_por,
+            tarefa.criador_id,
             tarefa.assignado_para || null,
             JSON.stringify(tarefa.etiquetas || []),
             tarefa.estimativa_horas || null,
@@ -69,13 +69,13 @@ export class TarefaRepository {
         const query = `
             SELECT t.*, 
                    uc.nome as criador_nome,
-                   uc.avatar_url as criador_avatar,
+                   uc.foto_perfil as criador_foto,
                    ua.nome as assignado_nome,
-                   ua.avatar_url as assignado_avatar,
+                   ua.foto_perfil as assignado_foto,
                    ua.email as assignado_email,
                    g.nome as grupo_nome
             FROM tarefas t
-            LEFT JOIN usuarios uc ON t.criado_por = uc.id
+            LEFT JOIN usuarios uc ON t.criador_id = uc.id
             LEFT JOIN usuarios ua ON t.assignado_para = ua.id
             LEFT JOIN grupos g ON t.grupo_id = g.id
             WHERE t.id = $1 AND t.deletado_em IS NULL
@@ -147,9 +147,9 @@ export class TarefaRepository {
         const query = `
             SELECT t.*, 
                    uc.nome as criador_nome,
-                   uc.avatar_url as criador_avatar,
+                   uc.foto_perfil as criador_avatar,
                    ua.nome as assignado_nome,
-                   ua.avatar_url as assignado_avatar,
+                   ua.foto_perfil as assignado_avatar,
                    (SELECT COUNT(*) FROM comentarios_tarefas WHERE tarefa_id = t.id) as total_comentarios
             FROM tarefas t
             LEFT JOIN usuarios uc ON t.criado_por = uc.id
@@ -289,7 +289,7 @@ export class TarefaRepository {
         const query = `
             SELECT ct.*, 
                    u.nome as usuario_nome,
-                   u.avatar_url as usuario_avatar
+                   u.foto_perfil as usuario_avatar
             FROM comentarios_tarefas ct
             LEFT JOIN usuarios u ON ct.usuario_id = u.id
             WHERE ct.tarefa_id = $1
@@ -373,7 +373,7 @@ export class TarefaRepository {
                    uc.nome as criador_nome,
                    g.nome as grupo_nome
             FROM tarefas t
-            LEFT JOIN usuarios uc ON t.criado_por = uc.id
+            LEFT JOIN usuarios uc ON t.criador_id = uc.id
             LEFT JOIN grupos g ON t.grupo_id = g.id
             WHERE (t.grupo_id = $1 OR $1 IS NULL)
               AND t.assignado_para = $2

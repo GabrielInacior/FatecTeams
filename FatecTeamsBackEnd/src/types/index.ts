@@ -22,6 +22,7 @@ export interface IGrupo {
     codigo_acesso: string;
     tipo_grupo: TipoGrupo;
     criador_id: string;
+    configuracoes?: any;
     data_criacao: Date;
     data_atualizacao: Date;
 }
@@ -68,6 +69,11 @@ export interface ITarefa {
     data_vencimento?: Date;
     status: StatusTarefa;
     prioridade: PrioridadeTarefa;
+    assignado_para?: string;
+    etiquetas?: string[];
+    estimativa_horas?: number;
+    horas_trabalhadas?: number;
+    anexos?: string[];
     data_criacao: Date;
 }
 
@@ -80,8 +86,13 @@ export interface IEventoCalendario {
     data_inicio: Date;
     data_fim: Date;
     local?: string;
+    link_virtual?: string;
     tipo_evento: TipoEvento;
+    status?: 'agendado' | 'em_andamento' | 'concluido' | 'cancelado';
+    recorrencia?: any;
+    configuracoes?: any;
     data_criacao: Date;
+    data_atualizacao?: Date;
 }
 
 export interface IConviteGrupo {
@@ -102,9 +113,14 @@ export interface INotificacao {
     titulo: string;
     mensagem: string;
     tipo: TipoNotificacao;
+    origem_tipo?: 'grupo' | 'tarefa' | 'mensagem' | 'sistema' | 'evento';
+    origem_id?: string;
     referencia_id?: string;
     lida: boolean;
+    importante?: boolean;
+    metadados?: any;
     data_criacao: Date;
+    data_leitura?: Date;
 }
 
 // ============================================
@@ -141,7 +157,8 @@ export enum StatusTarefa {
 export enum PrioridadeTarefa {
     BAIXA = 'baixa',
     MEDIA = 'media',
-    ALTA = 'alta'
+    ALTA = 'alta',
+    URGENTE = 'urgente'
 }
 
 export enum TipoEvento {
@@ -149,6 +166,8 @@ export enum TipoEvento {
     ESTUDO = 'estudo',
     PROVA = 'prova',
     APRESENTACAO = 'apresentacao',
+    AULA = 'aula',
+    DEADLINE = 'deadline',
     OUTRO = 'outro'
 }
 
@@ -164,7 +183,9 @@ export enum TipoNotificacao {
     CONVITE = 'convite',
     TAREFA = 'tarefa',
     EVENTO = 'evento',
-    SISTEMA = 'sistema'
+    SISTEMA = 'sistema',
+    DEADLINE = 'deadline',
+    MENCAO = 'mencao'
 }
 
 export enum ProvedorOAuth {

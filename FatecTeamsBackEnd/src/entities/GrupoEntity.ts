@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 export interface IGrupoCreate {
     nome: string;
     descricao?: string;
-    tipo: 'publico' | 'privado' | 'fechado' | 'secreto';
+    tipo: 'publico' | 'privado' | 'secreto';
     configuracoes?: any;
     criador_id: string;
 }
@@ -12,7 +12,7 @@ export interface IGrupoCreate {
 export interface IGrupoUpdate {
     nome?: string;
     descricao?: string;
-    tipo?: 'publico' | 'privado' | 'fechado' | 'secreto';
+    tipo?: 'publico' | 'privado' | 'secreto';
     configuracoes?: any;
 }
 
@@ -48,7 +48,7 @@ export class GrupoEntity {
                 permite_arquivos: true,
                 permite_tarefas: true,
                 tamanho_max_arquivo_mb: 50,
-                requer_aprovacao_membros: this.dados.tipo === 'privado' || this.dados.tipo === 'fechado'
+                requer_aprovacao_membros: this.dados.tipo === 'privado' || this.dados.tipo === 'secreto'
             };
         }
     }
@@ -99,8 +99,8 @@ export class GrupoEntity {
         try {
             this.dados = {
                 ...dadosGrupo,
-                criado_em: new Date(),
-                atualizado_em: new Date(),
+                data_criacao: new Date(),
+                data_atualizacao: new Date(),
                 configuracoes: dadosGrupo.configuracoes || {}
             };
 
@@ -156,7 +156,7 @@ export class GrupoEntity {
             this.dados = {
                 ...grupoExistente,
                 ...dadosAtualizacao,
-                atualizado_em: new Date()
+                data_atualizacao: new Date()
             };
 
             this.preRules();

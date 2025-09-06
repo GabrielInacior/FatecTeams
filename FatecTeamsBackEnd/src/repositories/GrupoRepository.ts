@@ -4,11 +4,12 @@ export interface IGrupo {
     id?: string;
     nome: string;
     descricao?: string;
-    tipo: 'publico' | 'privado' | 'fechado' | 'secreto';
-    configuracoes: any;
+    tipo: 'publico' | 'privado' | 'secreto';
+    codigo_acesso?: string;
+    configuracoes?: any;
     criador_id: string;
-    criado_em?: Date;
-    atualizado_em?: Date;
+    data_criacao?: Date;
+    data_atualizacao?: Date;
     total_membros?: number;
     criador_nome?: string;
     membros_count?: number;
@@ -40,8 +41,8 @@ export class GrupoRepository {
 
     async criar(grupo: IGrupo): Promise<string> {
         const query = `
-            INSERT INTO grupos (nome, descricao, tipo_grupo, criador_id)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO grupos (nome, descricao, tipo_grupo, criador_id, codigo_acesso, configuracoes)
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING id
         `;
         
@@ -49,7 +50,9 @@ export class GrupoRepository {
             grupo.nome,
             grupo.descricao || null,
             grupo.tipo,
-            grupo.criador_id
+            grupo.criador_id,
+            null, // codigo_acesso será gerado pelo trigger
+            JSON.stringify({})  // configuracoes padrão vazio
         ]);
 
         return result.rows[0].id;
@@ -78,10 +81,11 @@ export class GrupoRepository {
             nome: row.nome,
             descricao: row.descricao,
             tipo: row.tipo_grupo,
+            codigo_acesso: row.codigo_acesso,
             configuracoes: {},
             criador_id: row.criador_id,
-            criado_em: row.data_criacao,
-            atualizado_em: row.data_atualizacao,
+            data_criacao: row.data_criacao,
+            data_atualizacao: row.data_atualizacao,
             total_membros: parseInt(row.total_membros) || 0,
             criador_nome: row.criador_nome
         };

@@ -2,13 +2,124 @@ import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../types';
 import { AuthMiddleware } from '../middlewares/AuthMiddleware';
 import { UsuarioRepository } from '../repositories/UsuarioRepository';
+import { AuthTradicionalService } from '../services/AuthTradicionalService';
+import { GoogleOAuthService, IGoogleUserInfo } from '../services/GoogleOAuthService';
 
 export class AuthController {
     private usuarioRepository: UsuarioRepository;
+    private authTradicionalService: AuthTradicionalService;
+    private googleOAuthService: GoogleOAuthService;
 
     constructor() {
         this.usuarioRepository = new UsuarioRepository();
+        this.authTradicionalService = new AuthTradicionalService();
+        this.googleOAuthService = new GoogleOAuthService();
     }
+
+    // ============================================
+    // LOGIN TRADICIONAL
+    // ============================================
+
+    public loginTradicional = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { email, senha } = req.body;
+
+            if (!email || !senha) {
+                res.status(400).json({
+                    sucesso: false,
+                    mensagem: 'Email e senha são obrigatórios',
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            const resultado = await this.authTradicionalService.login({ email, senha });
+
+            if (!resultado.sucesso) {
+                res.status(401).json({
+                    sucesso: false,
+                    mensagem: 'Falha na autenticação',
+                    erros: resultado.erros,
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            res.status(200).json({
+                sucesso: true,
+                mensagem: 'Login realizado com sucesso',
+                dados: {
+                    usuario: resultado.usuario,
+                    accessToken: resultado.accessToken,
+                    refreshToken: resultado.refreshToken
+                },
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Erro no login tradicional:', error);
+            res.status(500).json({
+                sucesso: false,
+                mensagem: 'Erro interno do servidor',
+                timestamp: new Date().toISOString()
+            });
+        }
+    };
+
+    // ============================================
+    // REGISTRO TRADICIONAL
+    // ============================================
+
+    public registroTradicional = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { nome, email, senha, telefone } = req.body;
+
+            if (!nome || !email || !senha) {
+                res.status(400).json({
+                    sucesso: false,
+                    mensagem: 'Nome, email e senha são obrigatórios',
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            const resultado = await this.authTradicionalService.registro({
+                nome,
+                email,
+                senha,
+                telefone
+            });
+
+            if (!resultado.sucesso) {
+                res.status(400).json({
+                    sucesso: false,
+                    mensagem: 'Falha no registro',
+                    erros: resultado.erros,
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            res.status(201).json({
+                sucesso: true,
+                mensagem: 'Usuário registrado com sucesso',
+                dados: {
+                    usuario: resultado.usuario,
+                    accessToken: resultado.accessToken,
+                    refreshToken: resultado.refreshToken
+                },
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Erro no registro tradicional:', error);
+            res.status(500).json({
+                sucesso: false,
+                mensagem: 'Erro interno do servidor',
+                timestamp: new Date().toISOString()
+            });
+        }
+    };
 
     // ============================================
     // RENOVAR TOKEN JWT
@@ -179,36 +290,184 @@ export class AuthController {
     };
 
     // ============================================
-    // OAUTH GOOGLE (PLACEHOLDER)
+    // OAUTH GOOGLE
     // ============================================
 
     public loginGoogle = async (req: Request, res: Response): Promise<void> => {
         try {
-            const { googleToken } = req.body;
+            const { idToken, accessToken } = req.body;
 
-            if (!googleToken) {
+            if (!idToken && !accessToken) {
                 res.status(400).json({
                     sucesso: false,
-                    mensagem: 'Token do Google é obrigatório',
+                    mensagem: 'Token do Google (ID Token ou Access Token) é obrigatório',
                     timestamp: new Date().toISOString()
                 });
                 return;
             }
 
-            // TODO: Implementar validação do token Google
-            // 1. Validar token com Google API
-            // 2. Extrair dados do usuário
-            // 3. Criar/buscar usuário no banco
-            // 4. Gerar JWT tokens
+            let googleUserInfo: IGoogleUserInfo | null = null;
 
-            res.status(501).json({
-                sucesso: false,
-                mensagem: 'Login com Google não implementado ainda',
+            // Tentar verificar ID Token primeiro
+            if (idToken) {
+                googleUserInfo = await this.googleOAuthService.verificarTokenId(idToken);
+            }
+
+            // Se não conseguiu com ID Token, tentar com Access Token
+            if (!googleUserInfo && accessToken) {
+                googleUserInfo = await this.googleOAuthService.obterInformacoesUsuario(accessToken);
+            }
+
+            if (!googleUserInfo) {
+                res.status(401).json({
+                    sucesso: false,
+                    mensagem: 'Token do Google inválido',
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            // Buscar ou criar usuário no banco
+            let usuario = await this.usuarioRepository.buscarPorEmail(googleUserInfo.email);
+
+            if (!usuario) {
+                // Criar novo usuário
+                const novoUsuario = await this.usuarioRepository.criar({
+                    nome: googleUserInfo.name,
+                    email: googleUserInfo.email,
+                    hash_senha: '', // OAuth não precisa de senha local
+                    status_ativo: true,
+                    data_criacao: new Date()
+                });
+
+                if (!novoUsuario) {
+                    res.status(500).json({
+                        sucesso: false,
+                        mensagem: 'Erro ao criar usuário com dados do Google',
+                        timestamp: new Date().toISOString()
+                    });
+                    return;
+                }
+
+                usuario = novoUsuario;
+
+                // Se tiver foto, atualizar
+                if (googleUserInfo.picture) {
+                    await this.usuarioRepository.atualizarFotoPerfil(usuario.id, googleUserInfo.picture);
+                    usuario.foto_perfil = googleUserInfo.picture;
+                }
+            } else if (!usuario.status_ativo) {
+                res.status(401).json({
+                    sucesso: false,
+                    mensagem: 'Conta desativada. Entre em contato com o suporte.',
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            // Gerar tokens JWT
+            const payload = {
+                id: usuario.id,
+                nome: usuario.nome,
+                email: usuario.email
+            };
+
+            const jwtAccessToken = AuthMiddleware.gerarToken(payload);
+            const refreshToken = AuthMiddleware.gerarRefreshToken(payload);
+
+            // Atualizar último acesso
+            await this.usuarioRepository.atualizarUltimoAcesso(usuario.id);
+
+            res.status(200).json({
+                sucesso: true,
+                mensagem: 'Login com Google realizado com sucesso',
+                dados: {
+                    usuario: {
+                        id: usuario.id,
+                        nome: usuario.nome,
+                        email: usuario.email,
+                        foto_perfil: usuario.foto_perfil,
+                        telefone: usuario.telefone
+                    },
+                    accessToken: jwtAccessToken,
+                    refreshToken: refreshToken
+                },
                 timestamp: new Date().toISOString()
             });
 
         } catch (error) {
-            console.error('Erro no controller login Google:', error);
+            console.error('Erro no login Google:', error);
+            res.status(500).json({
+                sucesso: false,
+                mensagem: 'Erro interno do servidor',
+                timestamp: new Date().toISOString()
+            });
+        }
+    };
+
+    // ============================================
+    // URL DE AUTORIZAÇÃO GOOGLE
+    // ============================================
+
+    public obterUrlAutorizacaoGoogle = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { state } = req.query;
+
+            const url = this.googleOAuthService.gerarUrlAutorizacao(state as string);
+
+            res.status(200).json({
+                sucesso: true,
+                dados: {
+                    authUrl: url
+                },
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Erro ao gerar URL de autorização Google:', error);
+            res.status(500).json({
+                sucesso: false,
+                mensagem: 'Erro interno do servidor',
+                timestamp: new Date().toISOString()
+            });
+        }
+    };
+
+    // ============================================
+    // CALLBACK GOOGLE OAUTH
+    // ============================================
+
+    public callbackGoogle = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { code, state } = req.query;
+
+            if (!code) {
+                res.status(400).json({
+                    sucesso: false,
+                    mensagem: 'Código de autorização não fornecido',
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            // Trocar código por tokens
+            const tokens = await this.googleOAuthService.trocarCodigoPorTokens(code as string);
+
+            if (!tokens) {
+                res.status(400).json({
+                    sucesso: false,
+                    mensagem: 'Erro ao obter tokens do Google',
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            // Usar o access token para fazer login
+            req.body = { accessToken: tokens.access_token };
+            await this.loginGoogle(req, res);
+
+        } catch (error) {
+            console.error('Erro no callback Google:', error);
             res.status(500).json({
                 sucesso: false,
                 mensagem: 'Erro interno do servidor',
@@ -291,6 +550,61 @@ export class AuthController {
 
         } catch (error) {
             console.error('Erro no controller info sessão:', error);
+            res.status(500).json({
+                sucesso: false,
+                mensagem: 'Erro interno do servidor',
+                timestamp: new Date().toISOString()
+            });
+        }
+    };
+
+    // ============================================
+    // ALTERAR SENHA
+    // ============================================
+
+    public alterarSenha = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+        try {
+            const { senhaAtual, novaSenha } = req.body;
+            const userId = req.user?.id;
+
+            if (!userId) {
+                res.status(401).json({
+                    sucesso: false,
+                    mensagem: 'Usuário não autenticado',
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            if (!senhaAtual || !novaSenha) {
+                res.status(400).json({
+                    sucesso: false,
+                    mensagem: 'Senha atual e nova senha são obrigatórias',
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            const resultado = await this.authTradicionalService.alterarSenha(userId, senhaAtual, novaSenha);
+
+            if (!resultado.sucesso) {
+                res.status(400).json({
+                    sucesso: false,
+                    mensagem: 'Erro ao alterar senha',
+                    erros: resultado.erros,
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            res.status(200).json({
+                sucesso: true,
+                mensagem: 'Senha alterada com sucesso',
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Erro ao alterar senha:', error);
             res.status(500).json({
                 sucesso: false,
                 mensagem: 'Erro interno do servidor',

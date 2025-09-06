@@ -2,14 +2,17 @@ import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../types';
 import { UsuarioRepository } from '../repositories/UsuarioRepository';
 import { NotificacaoRepository } from '../repositories/NotificacaoRepository';
+import { WebSocketService } from '../services/WebSocketService';
 
 export class NotificacaoController {
     private usuarioRepository: UsuarioRepository;
     private notificacaoRepository: NotificacaoRepository;
+    private webSocketService: WebSocketService;
 
     constructor() {
         this.usuarioRepository = new UsuarioRepository();
         this.notificacaoRepository = new NotificacaoRepository();
+        this.webSocketService = WebSocketService.getInstance();
     }
 
     async listarNotificacoes(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -116,6 +119,20 @@ export class NotificacaoController {
                 mensagem,
                 tipo
             });
+
+            // Emitir notificação via WebSocket
+            this.webSocketService.emitirNotificacao(usuario_id, {
+                id: notificacaoId,
+                titulo,
+                mensagem,
+                tipo,
+                importante,
+                data_criacao: new Date()
+            });
+
+            // Atualizar contador de notificações
+            const estatisticas = await this.notificacaoRepository.obterEstatisticas(usuario_id);
+            this.webSocketService.emitirContadorNotificacoes(usuario_id, estatisticas.nao_lidas);
 
             res.status(201).json({
                 mensagem: 'Notificação criada com sucesso',

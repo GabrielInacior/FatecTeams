@@ -25,12 +25,12 @@ export class UsuarioRepository {
             usuario.id,
             usuario.nome,
             usuario.email,
-            usuario.senha_hash,
-            usuario.foto_perfil,
-            usuario.telefone,
-            usuario.status_ativo,
-            usuario.data_criacao,
-            usuario.data_atualizacao
+            usuario.senha_hash || null,
+            usuario.foto_perfil || null,
+            usuario.telefone || null,
+            usuario.status_ativo !== false, // Default true
+            new Date(),
+            new Date()
         ];
 
         try {
@@ -357,6 +357,93 @@ export class UsuarioRepository {
         } catch (error) {
             console.error('Erro ao atualizar foto de perfil:', error);
             throw new Error('Erro interno do servidor ao atualizar foto');
+        }
+    }
+
+    // ============================================
+    // MÉTODOS PARA AUTENTICAÇÃO TRADICIONAL
+    // ============================================
+
+    public async criar(dados: {
+        nome: string;
+        email: string;
+        telefone?: string;
+        hash_senha: string;
+        status_ativo: boolean;
+        data_criacao: Date;
+    }): Promise<IUsuario | null> {
+        const query = `
+            INSERT INTO usuarios (
+                nome, email, telefone, senha_hash, status_ativo, data_criacao, data_atualizacao
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING *
+        `;
+
+        const values = [
+            dados.nome,
+            dados.email,
+            dados.telefone || null,
+            dados.hash_senha,
+            dados.status_ativo,
+            dados.data_criacao,
+            new Date()
+        ];
+
+        try {
+            const result = await this.db.query(query, values);
+            return result.rows[0];
+        } catch (error) {
+            console.error('Erro ao criar usuário:', error);
+            return null;
+        }
+    }
+
+    public async atualizarUltimoAcesso(usuarioId: string): Promise<boolean> {
+        const query = `
+            UPDATE usuarios 
+            SET ultimo_acesso = NOW(), data_atualizacao = NOW()
+            WHERE id = $1
+        `;
+
+        try {
+            const result = await this.db.query(query, [usuarioId]);
+            return result.rowCount > 0;
+        } catch (error) {
+            console.error('Erro ao atualizar último acesso:', error);
+            return false;
+        }
+    }
+
+    public async atualizarSenha(usuarioId: string, novoHashSenha: string): Promise<boolean> {
+        const query = `
+            UPDATE usuarios 
+            SET senha_hash = $1, data_atualizacao = NOW()
+            WHERE id = $2 AND status_ativo = true
+        `;
+
+        try {
+            const result = await this.db.query(query, [novoHashSenha, usuarioId]);
+            return result.rowCount > 0;
+        } catch (error) {
+            console.error('Erro ao atualizar senha:', error);
+            return false;
+        }
+    }
+
+    public async buscarPorEmailComSenhaCompleto(email: string): Promise<IUsuario | null> {
+        const query = `
+            SELECT id, nome, email, senha_hash, foto_perfil, telefone, 
+                   status_ativo, data_criacao, data_atualizacao, ultimo_acesso
+            FROM usuarios 
+            WHERE email = $1
+        `;
+
+        try {
+            const result = await this.db.query(query, [email]);
+            return result.rows.length > 0 ? result.rows[0] : null;
+        } catch (error) {
+            console.error('Erro ao buscar usuário por email com senha:', error);
+            return null;
         }
     }
 }

@@ -54,6 +54,20 @@ export const config = {
         clientSecret: process.env.MICROSOFT_CLIENT_SECRET || '',
     },
 
+    // OAuth - Configurações gerais
+    oauth: {
+        google: {
+            clientId: process.env.GOOGLE_CLIENT_ID || '',
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+            redirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/auth/google/callback'
+        },
+        microsoft: {
+            clientId: process.env.MICROSOFT_CLIENT_ID || '',
+            clientSecret: process.env.MICROSOFT_CLIENT_SECRET || '',
+            redirectUri: process.env.MICROSOFT_REDIRECT_URI || 'http://localhost:3000/auth/microsoft/callback'
+        }
+    },
+
     // Rate Limiting
     rateLimit: {
         maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),

@@ -74,7 +74,7 @@ export class ArquivoRepository {
         const query = `
             SELECT a.*, 
                    u.nome as enviado_por_nome,
-                   u.avatar_url as enviado_por_avatar,
+                   u.foto_perfil as enviado_por_avatar,
                    g.nome as grupo_nome,
                    ap.nome as arquivo_pai_nome
             FROM arquivos a
@@ -156,7 +156,7 @@ export class ArquivoRepository {
         const query = `
             SELECT a.*, 
                    u.nome as enviado_por_nome,
-                   u.avatar_url as enviado_por_avatar,
+                   u.foto_perfil as enviado_por_avatar,
                    (SELECT COUNT(*) FROM arquivos_versoes WHERE arquivo_pai_id = a.id) as total_versoes
             FROM arquivos a
             LEFT JOIN usuarios u ON a.enviado_por = u.id
@@ -283,7 +283,7 @@ export class ArquivoRepository {
         const query = `
             SELECT a.*, 
                    u.nome as enviado_por_nome,
-                   u.avatar_url as enviado_por_avatar
+                   u.foto_perfil as enviado_por_avatar
             FROM arquivos a
             LEFT JOIN usuarios u ON a.enviado_por = u.id
             WHERE (a.id = $1 OR a.arquivo_pai_id = $1)
@@ -366,7 +366,7 @@ export class ArquivoRepository {
         const query = `
             SELECT a.*, 
                    u.nome as enviado_por_nome,
-                   u.avatar_url as enviado_por_avatar,
+                   u.foto_perfil as enviado_por_avatar,
                    ts_headline('portuguese', a.nome_original || ' ' || COALESCE(a.descricao, ''), 
                               to_tsquery('portuguese', $2), 'MaxWords=10') as nome_destacado
             FROM arquivos a
@@ -441,7 +441,7 @@ export class ArquivoRepository {
         const query = `
             SELECT a.*, 
                    u.nome as enviado_por_nome,
-                   u.avatar_url as enviado_por_avatar
+                   u.foto_perfil as enviado_por_avatar
             FROM arquivos a
             LEFT JOIN usuarios u ON a.enviado_por = u.id
             WHERE a.grupo_id = $1 

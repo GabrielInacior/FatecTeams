@@ -15,7 +15,7 @@ export class GrupoController {
 
     public criar = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
         try {
-            const { nome, descricao, tipo, configuracoes } = req.body;
+            const { nome, descricao, tipo_grupo, tipo, configuracoes } = req.body;
             const userId = req.user?.id;
 
             if (!userId) {
@@ -30,9 +30,9 @@ export class GrupoController {
             const dadosGrupo: IGrupoCreate = {
                 nome,
                 descricao,
-                tipo,
+                tipo: tipo_grupo || tipo, // Aceitar tanto tipo_grupo quanto tipo
                 configuracoes,
-                criado_por: userId
+                criador_id: userId
             };
 
             const resultado = await this.grupoEntity.create(dadosGrupo);
@@ -231,14 +231,16 @@ export class GrupoController {
         }
     };
 
-    public listarPublicos = async (req: Request, res: Response): Promise<void> => {
+    public listarPublicos = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
         try {
             const { termo, limite, offset } = req.query;
+            const userId = req.user?.id; // Usuário pode ser opcional para grupos públicos
 
             const resultado = await this.grupoEntity.buscarPublicos(
                 termo as string,
                 limite ? parseInt(limite as string) : 20,
-                offset ? parseInt(offset as string) : 0
+                offset ? parseInt(offset as string) : 0,
+                userId // Passar o usuário para excluir grupos onde ele já é membro
             );
 
             if (!resultado.sucesso) {
@@ -338,6 +340,48 @@ export class GrupoController {
 
         } catch (error) {
             console.error('Erro no controller adicionar membro:', error);
+            res.status(500).json({
+                sucesso: false,
+                mensagem: 'Erro interno do servidor',
+                timestamp: new Date().toISOString()
+            });
+        }
+    };
+
+    public entrarGrupoPublico = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+        try {
+            const { id } = req.params;
+            const userId = req.user?.id;
+
+            if (!userId) {
+                res.status(401).json({
+                    sucesso: false,
+                    mensagem: 'Usuário não autenticado',
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            const resultado = await this.grupoEntity.entrarGrupoPublico(id, userId);
+
+            if (!resultado.sucesso) {
+                res.status(400).json({
+                    sucesso: false,
+                    mensagem: 'Erro ao entrar no grupo',
+                    erros: resultado.erros,
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            res.status(200).json({
+                sucesso: true,
+                mensagem: 'Entrada no grupo realizada com sucesso',
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Erro no controller entrar no grupo:', error);
             res.status(500).json({
                 sucesso: false,
                 mensagem: 'Erro interno do servidor',
@@ -466,4 +510,151 @@ export class GrupoController {
             });
         }
     };
+
+    public obterDetalhes = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { id } = req.params;
+
+            if (!id) {
+                res.status(400).json({
+                    sucesso: false,
+                    mensagem: 'ID do grupo é obrigatório',
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            const resultado = await this.grupoEntity.buscarPorId(id);
+
+            if (!resultado.sucesso) {
+                res.status(404).json({
+                    sucesso: false,
+                    mensagem: 'Grupo não encontrado',
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            // Buscar membros do grupo
+            const resultadoMembros = await this.grupoEntity.obterMembros(id);
+            
+            res.status(200).json({
+                sucesso: true,
+                dados: {
+                    ...resultado.grupo,
+                    membros: resultadoMembros.sucesso ? resultadoMembros.membros : []
+                },
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Erro no controller obter detalhes:', error);
+            res.status(500).json({
+                sucesso: false,
+                mensagem: 'Erro interno do servidor',
+                timestamp: new Date().toISOString()
+            });
+        }
+    };
+
+    public sairDoGrupo = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+        try {
+            const { id } = req.params;
+            const usuarioId = req.user?.id;
+
+            if (!id || !usuarioId) {
+                res.status(400).json({
+                    sucesso: false,
+                    mensagem: 'ID do grupo e usuário são obrigatórios',
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            const resultado = await this.grupoEntity.removerMembro(id, usuarioId, usuarioId);
+
+            if (!resultado.sucesso) {
+                res.status(400).json({
+                    sucesso: false,
+                    mensagem: 'Erro ao sair do grupo',
+                    erros: resultado.erros,
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            res.status(200).json({
+                sucesso: true,
+                mensagem: 'Saiu do grupo com sucesso',
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Erro no controller sair do grupo:', error);
+            res.status(500).json({
+                sucesso: false,
+                mensagem: 'Erro interno do servidor',
+                timestamp: new Date().toISOString()
+            });
+        }
+    };
+
+    // ============================================
+    // GESTÃO DE MEMBROS
+    // ============================================
+
+    public alterarNivelMembro = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+        try {
+            const { id: grupoId, usuarioId } = req.params;
+            const { nivel_permissao } = req.body;
+            const administradorId = req.user?.id;
+
+            if (!administradorId) {
+                res.status(401).json({
+                    sucesso: false,
+                    mensagem: 'Usuário não autenticado',
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            // Verificar se o usuário é admin do grupo
+            const permissaoAdmin = await this.grupoEntity.verificarPermissao(grupoId, administradorId);
+            if (!permissaoAdmin.sucesso || permissaoAdmin.permissao?.papel !== 'admin') {
+                res.status(403).json({
+                    sucesso: false,
+                    mensagem: 'Apenas administradores podem alterar níveis de permissão',
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            const resultado = await this.grupoEntity.alterarNivelMembro(grupoId, usuarioId, nivel_permissao);
+
+            if (!resultado.sucesso) {
+                res.status(400).json({
+                    sucesso: false,
+                    mensagem: 'Erro ao alterar nível do membro',
+                    erros: resultado.erros,
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            res.status(200).json({
+                sucesso: true,
+                mensagem: 'Nível do membro alterado com sucesso',
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Erro ao alterar nível do membro:', error);
+            res.status(500).json({
+                sucesso: false,
+                mensagem: 'Erro interno do servidor',
+                timestamp: new Date().toISOString()
+            });
+        }
+    };
+
 }

@@ -168,11 +168,8 @@ export class NotificacaoEntity {
                 titulo: dadosNotificacao.titulo,
                 mensagem: dadosNotificacao.mensagem,
                 tipo: dadosNotificacao.tipo,
-                origem_tipo: dadosNotificacao.origem_tipo,
-                origem_id: dadosNotificacao.origem_id,
                 referencia_id: dadosNotificacao.referencia_id,
                 lida: false,
-                importante: dadosNotificacao.importante || false,
                 metadados: dadosNotificacao.metadados ? JSON.stringify(dadosNotificacao.metadados) : '{}',
                 data_criacao: new Date()
             };

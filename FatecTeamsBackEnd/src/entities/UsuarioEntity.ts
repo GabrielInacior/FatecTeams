@@ -98,8 +98,13 @@ export class UsuarioEntity {
         // Atualizar timestamp
         this.data_atualizacao = new Date();
         
-        // Salvar no banco
-        const usuarioSalvo = await usuarioRepository.salvar(this.toDatabase());
+        // Se tem ID, é uma atualização, senão é criação
+        let usuarioSalvo;
+        if (this.id) {
+            usuarioSalvo = await usuarioRepository.atualizar(this.toDatabase());
+        } else {
+            usuarioSalvo = await usuarioRepository.salvar(this.toDatabase());
+        }
         
         return UsuarioEntity.fromDatabase(usuarioSalvo);
     }

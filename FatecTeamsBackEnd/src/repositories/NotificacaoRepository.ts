@@ -10,7 +10,6 @@ export interface INotificacao {
     origem_id?: string;
     referencia_id?: string;
     lida?: boolean;
-    importante?: boolean;
     metadados?: any;
     data_criacao?: Date;
     data_leitura?: Date;
@@ -53,10 +52,10 @@ export class NotificacaoRepository {
     async criar(notificacao: INotificacao): Promise<string> {
         const query = `
             INSERT INTO notificacoes (
-                usuario_id, titulo, mensagem, tipo, origem_tipo, origem_id, 
-                referencia_id, lida, importante, metadados
+                usuario_id, titulo, mensagem, tipo, 
+                referencia_id, lida, metadados
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id
         `;
         
@@ -65,11 +64,8 @@ export class NotificacaoRepository {
             notificacao.titulo,
             notificacao.mensagem,
             notificacao.tipo,
-            notificacao.origem_tipo || null,
-            notificacao.origem_id || null,
             notificacao.referencia_id || null,
             notificacao.lida || false,
-            notificacao.importante || false,
             JSON.stringify(notificacao.metadados || {})
         ]);
 
@@ -95,11 +91,8 @@ export class NotificacaoRepository {
             titulo: notif.titulo,
             mensagem: notif.mensagem,
             tipo: notif.tipo,
-            origem_tipo: notif.origem_tipo,
-            origem_id: notif.origem_id,
             referencia_id: notif.referencia_id,
             lida: notif.lida,
-            importante: notif.importante,
             metadados: notif.metadados,
             data_criacao: notif.data_criacao,
             data_leitura: notif.data_leitura
@@ -210,13 +203,11 @@ export class NotificacaoRepository {
             SELECT 
                 COUNT(*) as total,
                 COUNT(CASE WHEN lida = FALSE THEN 1 END) as nao_lidas,
-                COUNT(CASE WHEN importante = TRUE AND lida = FALSE THEN 1 END) as importantes,
                 COUNT(CASE WHEN tipo = 'mensagem' AND lida = FALSE THEN 1 END) as mensagem,
                 COUNT(CASE WHEN tipo = 'tarefa' AND lida = FALSE THEN 1 END) as tarefa,
                 COUNT(CASE WHEN tipo = 'convite' AND lida = FALSE THEN 1 END) as convite,
                 COUNT(CASE WHEN tipo = 'sistema' AND lida = FALSE THEN 1 END) as sistema,
-                COUNT(CASE WHEN tipo = 'deadline' AND lida = FALSE THEN 1 END) as deadline,
-                COUNT(CASE WHEN tipo = 'mencao' AND lida = FALSE THEN 1 END) as mencao,
+                COUNT(CASE WHEN tipo = 'evento' AND lida = FALSE THEN 1 END) as evento,
                 COUNT(CASE WHEN data_criacao > NOW() - INTERVAL '24 hours' THEN 1 END) as ultimas_24h
             FROM notificacoes 
             WHERE usuario_id = $1
@@ -228,14 +219,12 @@ export class NotificacaoRepository {
         return {
             total: parseInt(stats.total),
             nao_lidas: parseInt(stats.nao_lidas),
-            importantes: parseInt(stats.importantes),
             por_tipo: {
                 mensagem: parseInt(stats.mensagem),
                 tarefa: parseInt(stats.tarefa),
                 convite: parseInt(stats.convite),
                 sistema: parseInt(stats.sistema),
-                deadline: parseInt(stats.deadline),
-                mencao: parseInt(stats.mencao)
+                evento: parseInt(stats.evento)
             },
             ultimas_24h: parseInt(stats.ultimas_24h)
         };
@@ -343,14 +332,14 @@ export class NotificacaoRepository {
         if (notificacoes.length === 0) return [];
 
         const values = notificacoes.map((notif, index) => {
-            const baseIndex = index * 10;
-            return `($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6}, $${baseIndex + 7}, $${baseIndex + 8}, $${baseIndex + 9}, $${baseIndex + 10})`;
+            const baseIndex = index * 6;
+            return `($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6})`;
         }).join(', ');
 
         const query = `
             INSERT INTO notificacoes (
-                usuario_id, titulo, mensagem, tipo, origem_tipo, origem_id,
-                referencia_id, lida, importante, metadados
+                usuario_id, titulo, mensagem, tipo,
+                referencia_id, lida
             )
             VALUES ${values}
             RETURNING id
@@ -363,12 +352,8 @@ export class NotificacaoRepository {
                 notif.titulo,
                 notif.mensagem,
                 notif.tipo,
-                notif.origem_tipo || null,
-                notif.origem_id || null,
                 notif.referencia_id || null,
-                notif.lida || false,
-                notif.importante || false,
-                JSON.stringify(notif.metadados || {})
+                notif.lida || false
             );
         });
 
@@ -386,5 +371,62 @@ export class NotificacaoRepository {
         
         const result = await this.db.query(query, [usuarioId]);
         return result.rowCount;
+    }
+
+    // ============================================
+    // MÉTODOS ESPECÍFICOS PARA CONVITES
+    // ============================================
+
+    async criarNotificacaoConvite(usuarioId: string, conviteId: string, grupoNome: string, convidadoPorNome: string): Promise<string> {
+        const notificacao: INotificacao = {
+            usuario_id: usuarioId,
+            titulo: 'Novo convite de grupo',
+            mensagem: `${convidadoPorNome} te convidou para o grupo "${grupoNome}"`,
+            tipo: 'convite',
+            origem_tipo: 'grupo',
+            referencia_id: conviteId,
+            metadados: {
+                grupo_nome: grupoNome,
+                convidado_por: convidadoPorNome,
+                tipo_convite: 'grupo'
+            }
+        };
+
+        return await this.criar(notificacao);
+    }
+
+    async removerNotificacoesConvite(conviteId: string): Promise<boolean> {
+        const query = `
+            DELETE FROM notificacoes 
+            WHERE referencia_id = $1 AND tipo = 'convite'
+        `;
+        
+        const result = await this.db.query(query, [conviteId]);
+        return result.rowCount > 0;
+    }
+
+    async listarConvitesPendentes(usuarioId: string): Promise<INotificacao[]> {
+        const query = `
+            SELECT * FROM notificacoes 
+            WHERE usuario_id = $1 AND tipo = 'convite' AND lida = FALSE
+            ORDER BY data_criacao DESC
+        `;
+        
+        const result = await this.db.query(query, [usuarioId]);
+        
+        return result.rows.map((row: any) => ({
+            id: row.id,
+            usuario_id: row.usuario_id,
+            titulo: row.titulo,
+            mensagem: row.mensagem,
+            tipo: row.tipo,
+            origem_tipo: row.origem_tipo,
+            origem_id: row.origem_id,
+            referencia_id: row.referencia_id,
+            lida: row.lida,
+            metadados: row.metadados,
+            data_criacao: row.data_criacao,
+            data_leitura: row.data_leitura
+        }));
     }
 }

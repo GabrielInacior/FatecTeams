@@ -46,14 +46,18 @@ router.post('/auth/microsoft', authController.loginMicrosoft);
 
 router.post('/grupos', authenticateToken, grupoController.criar);
 router.get('/grupos/:id', authenticateToken, grupoController.obter);
+router.get('/grupos/:id/detalhes', authenticateToken, grupoController.obterDetalhes);
 router.put('/grupos/:id', authenticateToken, grupoController.atualizar);
 router.delete('/grupos/:id', authenticateToken, grupoController.deletar);
+router.post('/grupos/:id/sair', authenticateToken, grupoController.sairDoGrupo);
 router.get('/grupos', authenticateToken, grupoController.listarMeus);
-router.get('/grupos/publicos/buscar', grupoController.listarPublicos);
+router.get('/grupos/publicos/buscar', authenticateToken, grupoController.listarPublicos);
+router.post('/grupos/:id/entrar', authenticateToken, grupoController.entrarGrupoPublico);
 router.post('/grupos/:id/membros', authenticateToken, grupoController.adicionarMembro);
 router.delete('/grupos/:grupoId/membros/:usuarioId', authenticateToken, grupoController.removerMembro);
 router.put('/grupos/:grupoId/membros/:usuarioId/papel', authenticateToken, grupoController.alterarPapel);
-router.get('/grupos/:id/membros', authenticateToken, grupoController.listarMeus);
+router.put('/grupos/:id/membros/:usuarioId/nivel', authenticateToken, grupoController.alterarNivelMembro);
+router.get('/grupos/:id/membros', authenticateToken, grupoController.obterMembros);
 router.get('/grupos/:id/estatisticas', authenticateToken, grupoController.obterEstatisticas);
 
 // ============================================
@@ -134,14 +138,14 @@ router.get('/grupos/:grupoId/arquivos/estatisticas', authenticateToken, arquivoC
 // ROTAS DE NOTIFICAÇÕES
 // ============================================
 
-router.get('/notificacoes', authenticateToken, notificacaoController.listarNotificacoes);
-router.get('/notificacoes/nao-lidas', authenticateToken, notificacaoController.contarNaoLidas);
-router.post('/notificacoes', authenticateToken, notificacaoController.criarNotificacao);
-router.patch('/notificacoes/:notificacaoId/marcar-lida', authenticateToken, notificacaoController.marcarComoLida);
-router.patch('/notificacoes/marcar-todas-lidas', authenticateToken, notificacaoController.marcarTodasComoLidas);
-router.delete('/notificacoes/:notificacaoId', authenticateToken, notificacaoController.removerNotificacao);
-router.get('/notificacoes/configuracoes', authenticateToken, notificacaoController.obterConfiguracoes);
-router.put('/notificacoes/configuracoes', authenticateToken, notificacaoController.atualizarConfiguracoes);
+router.get('/notificacoes', authenticateToken, notificacaoController.listarNotificacoes.bind(notificacaoController));
+router.get('/notificacoes/nao-lidas', authenticateToken, notificacaoController.contarNaoLidas.bind(notificacaoController));
+router.post('/notificacoes', authenticateToken, notificacaoController.criarNotificacao.bind(notificacaoController));
+router.patch('/notificacoes/:notificacaoId/marcar-lida', authenticateToken, notificacaoController.marcarComoLida.bind(notificacaoController));
+router.patch('/notificacoes/marcar-todas-lidas', authenticateToken, notificacaoController.marcarTodasComoLidas.bind(notificacaoController));
+router.delete('/notificacoes/:notificacaoId', authenticateToken, notificacaoController.removerNotificacao.bind(notificacaoController));
+router.get('/notificacoes/configuracoes', authenticateToken, notificacaoController.obterConfiguracoes.bind(notificacaoController));
+router.put('/notificacoes/configuracoes', authenticateToken, notificacaoController.atualizarConfiguracoes.bind(notificacaoController));
 
 // ============================================
 // ROTAS DE EVENTOS

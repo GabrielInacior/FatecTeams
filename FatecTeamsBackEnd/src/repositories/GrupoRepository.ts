@@ -4,11 +4,17 @@ export interface IGrupo {
     id?: string;
     nome: string;
     descricao?: string;
-    tipo: 'publico' | 'privado' | 'fechado';
+    tipo: 'publico' | 'privado' | 'fechado' | 'secreto';
     configuracoes: any;
-    criado_por: string;
+    criador_id: string;
     criado_em?: Date;
     atualizado_em?: Date;
+    total_membros?: number;
+    criador_nome?: string;
+    membros_count?: number;
+    mensagens_nao_lidas?: number;
+    ultima_atividade?: Date | string;
+    membro_admin?: boolean;
 }
 
 export interface IGrupoMembro {
@@ -34,8 +40,8 @@ export class GrupoRepository {
 
     async criar(grupo: IGrupo): Promise<string> {
         const query = `
-            INSERT INTO grupos (nome, descricao, tipo, configuracoes, criado_por)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO grupos (nome, descricao, tipo_grupo, criador_id)
+            VALUES ($1, $2, $3, $4)
             RETURNING id
         `;
         
@@ -43,8 +49,7 @@ export class GrupoRepository {
             grupo.nome,
             grupo.descricao || null,
             grupo.tipo,
-            JSON.stringify(grupo.configuracoes || {}),
-            grupo.criado_por
+            grupo.criador_id
         ]);
 
         return result.rows[0].id;
@@ -55,10 +60,10 @@ export class GrupoRepository {
             SELECT g.*, 
                    u.nome as criador_nome,
                    u.email as criador_email,
-                   (SELECT COUNT(*) FROM grupos_membros WHERE grupo_id = g.id) as total_membros
+                   (SELECT COUNT(*) FROM membros_grupo WHERE grupo_id = g.id AND ativo = true) as total_membros
             FROM grupos g
-            LEFT JOIN usuarios u ON g.criado_por = u.id
-            WHERE g.id = $1 AND g.deletado_em IS NULL
+            LEFT JOIN usuarios u ON g.criador_id = u.id
+            WHERE g.id = $1
         `;
         
         const result = await this.db.query(query, [id]);
@@ -72,11 +77,13 @@ export class GrupoRepository {
             id: row.id,
             nome: row.nome,
             descricao: row.descricao,
-            tipo: row.tipo,
-            configuracoes: JSON.parse(row.configuracoes || '{}'),
-            criado_por: row.criado_por,
-            criado_em: row.criado_em,
-            atualizado_em: row.atualizado_em
+            tipo: row.tipo_grupo,
+            configuracoes: {},
+            criador_id: row.criador_id,
+            criado_em: row.data_criacao,
+            atualizado_em: row.data_atualizacao,
+            total_membros: parseInt(row.total_membros) || 0,
+            criador_nome: row.criador_nome
         };
     }
 
@@ -84,14 +91,14 @@ export class GrupoRepository {
         const query = `
             SELECT DISTINCT g.*, 
                    u.nome as criador_nome,
-                   gm.papel,
-                   (SELECT COUNT(*) FROM grupos_membros WHERE grupo_id = g.id) as total_membros
+                   mg.nivel_permissao,
+                   (SELECT COUNT(*) FROM membros_grupo WHERE grupo_id = g.id AND ativo = true) as membros_count,
+                   (SELECT COUNT(*) FROM mensagens m WHERE m.grupo_id = g.id) as total_mensagens
             FROM grupos g
-            LEFT JOIN usuarios u ON g.criado_por = u.id
-            LEFT JOIN grupos_membros gm ON g.id = gm.grupo_id AND gm.usuario_id = $1
-            WHERE (g.criado_por = $1 OR gm.usuario_id = $1) 
-              AND g.deletado_em IS NULL
-            ORDER BY g.atualizado_em DESC
+            LEFT JOIN usuarios u ON g.criador_id = u.id
+            LEFT JOIN membros_grupo mg ON g.id = mg.grupo_id AND mg.usuario_id = $1
+            WHERE (g.criador_id = $1 OR (mg.usuario_id = $1 AND mg.ativo = true))
+            ORDER BY g.data_atualizacao DESC
             LIMIT $2 OFFSET $3
         `;
         
@@ -101,11 +108,15 @@ export class GrupoRepository {
             id: row.id,
             nome: row.nome,
             descricao: row.descricao,
-            tipo: row.tipo,
-            configuracoes: JSON.parse(row.configuracoes || '{}'),
-            criado_por: row.criado_por,
-            criado_em: row.criado_em,
-            atualizado_em: row.atualizado_em
+            tipo: row.tipo_grupo, // Mapear tipo_grupo para tipo
+            configuracoes: {},
+            criador_id: row.criador_id,
+            criado_em: row.data_criacao,
+            atualizado_em: row.data_atualizacao,
+            membros_count: parseInt(row.membros_count) || 0,
+            mensagens_nao_lidas: 0, // Remover leituras_mensagem por enquanto
+            ultima_atividade: row.data_atualizacao,
+            membro_admin: row.nivel_permissao === 'admin'
         }));
     }
 
@@ -125,7 +136,7 @@ export class GrupoRepository {
         }
         
         if (dados.tipo) {
-            campos.push(`tipo = $${contador++}`);
+            campos.push(`tipo_grupo = $${contador++}`);
             valores.push(dados.tipo);
         }
         
@@ -138,7 +149,7 @@ export class GrupoRepository {
             return false;
         }
 
-        campos.push(`atualizado_em = NOW()`);
+        campos.push(`data_atualizacao = NOW()`);
         valores.push(id);
 
         const query = `
@@ -171,7 +182,8 @@ export class GrupoRepository {
             INSERT INTO membros_grupo (grupo_id, usuario_id, nivel_permissao)
             VALUES ($1, $2, $3)
             ON CONFLICT (grupo_id, usuario_id) DO UPDATE SET
-                nivel_permissao = EXCLUDED.nivel_permissao
+                nivel_permissao = EXCLUDED.nivel_permissao,
+                ativo = true
         `;
         
         const result = await this.db.query(query, [
@@ -181,6 +193,27 @@ export class GrupoRepository {
         ]);
 
         return result.rowCount > 0;
+    }
+
+    async entrarGrupoPublico(grupoId: string, usuarioId: string): Promise<boolean> {
+        // Verificar se o grupo existe e é público
+        const verificarQuery = `
+            SELECT tipo_grupo FROM grupos 
+            WHERE id = $1 AND tipo_grupo = 'publico' AND deletado_em IS NULL
+        `;
+        
+        const verificacao = await this.db.query(verificarQuery, [grupoId]);
+        
+        if (verificacao.rows.length === 0) {
+            return false; // Grupo não existe ou não é público
+        }
+
+        // Adicionar como membro
+        return await this.adicionarMembro({
+            grupo_id: grupoId,
+            usuario_id: usuarioId,
+            nivel_permissao: 'membro'
+        });
     }
 
     async removerMembro(grupoId: string, usuarioId: string): Promise<boolean> {
@@ -193,25 +226,51 @@ export class GrupoRepository {
         return result.rowCount > 0;
     }
 
+    async alterarNivelMembro(grupoId: string, usuarioId: string, novoNivel: string): Promise<boolean> {
+        const query = `
+            UPDATE membros_grupo 
+            SET nivel_permissao = $3
+            WHERE grupo_id = $1 AND usuario_id = $2
+        `;
+        
+        const result = await this.db.query(query, [grupoId, usuarioId, novoNivel]);
+        return result.rowCount > 0;
+    }
+
     async listarMembros(grupoId: string): Promise<any[]> {
         const query = `
-            SELECT gm.*, 
-                   u.nome, u.email, u.avatar_url, u.status,
-                   u.ultimo_acesso, gm.criado_em as membro_desde
-            FROM grupos_membros gm
-            JOIN usuarios u ON gm.usuario_id = u.id
-            WHERE gm.grupo_id = $1 AND u.deletado_em IS NULL
+            SELECT mg.*, 
+                   u.nome, u.email, u.foto_perfil, u.status_ativo,
+                   mg.data_entrada as membro_desde
+            FROM membros_grupo mg
+            JOIN usuarios u ON mg.usuario_id = u.id
+            WHERE mg.grupo_id = $1 AND mg.ativo = true AND u.status_ativo = true
             ORDER BY 
-                CASE gm.papel 
+                CASE mg.nivel_permissao 
                     WHEN 'admin' THEN 1
                     WHEN 'moderador' THEN 2
                     ELSE 3
                 END,
-                gm.criado_em ASC
+                mg.data_entrada ASC
         `;
         
         const result = await this.db.query(query, [grupoId]);
-        return result.rows;
+        
+        return result.rows.map((row: any) => ({
+            id: row.id,
+            usuario_id: row.usuario_id,
+            grupo_id: row.grupo_id,
+            papel: row.nivel_permissao,
+            data_entrada: row.data_entrada,
+            membro_desde: row.membro_desde,
+            usuario: {
+                id: row.usuario_id,
+                nome: row.nome,
+                email: row.email,
+                foto_perfil: row.foto_perfil,
+                status_ativo: row.status_ativo
+            }
+        }));
     }
 
     async verificarPermissao(grupoId: string, usuarioId: string): Promise<IGrupoMembro | null> {
@@ -237,31 +296,48 @@ export class GrupoRepository {
     // BUSCA E FILTROS
     // ============================================
 
-    async buscarPublicos(termo: string = '', limite: number = 20, offset: number = 0): Promise<IGrupo[]> {
-        const query = `
+    async buscarPublicos(termo: string = '', limite: number = 20, offset: number = 0, usuarioId?: string): Promise<IGrupo[]> {
+        let query = `
             SELECT g.*, 
                    u.nome as criador_nome,
-                   (SELECT COUNT(*) FROM grupos_membros WHERE grupo_id = g.id) as total_membros
+                   (SELECT COUNT(*) FROM membros_grupo WHERE grupo_id = g.id) as total_membros
             FROM grupos g
-            LEFT JOIN usuarios u ON g.criado_por = u.id
-            WHERE g.tipo = 'publico' 
+            LEFT JOIN usuarios u ON g.criador_id = u.id
+            WHERE g.tipo_grupo = 'publico' 
               AND g.deletado_em IS NULL
               AND (g.nome ILIKE $1 OR g.descricao ILIKE $1)
-            ORDER BY total_membros DESC, g.criado_em DESC
-            LIMIT $2 OFFSET $3
         `;
         
-        const result = await this.db.query(query, [`%${termo}%`, limite, offset]);
+        const valores = [`%${termo}%`];
+        
+        // Se usuário fornecido, excluir grupos onde ele já é membro
+        if (usuarioId) {
+            query += ` AND g.id NOT IN (
+                SELECT DISTINCT mg.grupo_id 
+                FROM membros_grupo mg 
+                WHERE mg.usuario_id = $${valores.length + 1} AND mg.ativo = true
+            )`;
+            valores.push(usuarioId);
+        }
+        
+        query += ` ORDER BY total_membros DESC, g.data_criacao DESC
+            LIMIT $${valores.length + 1} OFFSET $${valores.length + 2}`;
+        
+        valores.push(limite.toString(), offset.toString());
+        
+        const result = await this.db.query(query, valores);
         
         return result.rows.map((row: any) => ({
             id: row.id,
             nome: row.nome,
             descricao: row.descricao,
-            tipo: row.tipo,
-            configuracoes: JSON.parse(row.configuracoes || '{}'),
-            criado_por: row.criado_por,
-            criado_em: row.criado_em,
-            atualizado_em: row.atualizado_em
+            tipo: row.tipo_grupo,
+            configuracoes: {},
+            criador_id: row.criador_id,
+            criado_em: row.data_criacao,
+            atualizado_em: row.data_atualizacao,
+            total_membros: parseInt(row.total_membros) || 0,
+            criador_nome: row.criador_nome
         }));
     }
 
@@ -272,10 +348,10 @@ export class GrupoRepository {
     async obterEstatisticas(grupoId: string): Promise<any> {
         const query = `
             SELECT 
-                (SELECT COUNT(*) FROM grupos_membros WHERE grupo_id = $1) as total_membros,
-                (SELECT COUNT(*) FROM mensagens WHERE grupo_id = $1 AND deletado_em IS NULL) as total_mensagens,
-                (SELECT COUNT(*) FROM tarefas WHERE grupo_id = $1 AND deletado_em IS NULL) as total_tarefas,
-                (SELECT COUNT(*) FROM arquivos WHERE grupo_id = $1 AND deletado_em IS NULL) as total_arquivos
+                (SELECT COUNT(*) FROM membros_grupo WHERE grupo_id = $1) as total_membros,
+                (SELECT COUNT(*) FROM mensagens WHERE grupo_id = $1) as total_mensagens,
+                (SELECT COUNT(*) FROM tarefas WHERE grupo_id = $1) as total_tarefas,
+                (SELECT COUNT(*) FROM arquivos WHERE grupo_id = $1) as total_arquivos
         `;
         
         const result = await this.db.query(query, [grupoId]);

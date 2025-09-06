@@ -114,8 +114,7 @@ export class NotificacaoController {
                 usuario_id,
                 titulo,
                 mensagem,
-                tipo,
-                importante
+                tipo
             });
 
             res.status(201).json({

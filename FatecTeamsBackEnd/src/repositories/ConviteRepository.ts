@@ -311,4 +311,61 @@ export class ConviteRepository {
         const result = await this.db.query(query, [codigo, usuarioId]);
         return result.rowCount > 0;
     }
+
+    async listarPorUsuario(usuarioId: string, email: string): Promise<IConvite[]> {
+        const query = `
+            SELECT cg.*, 
+                   g.nome as grupo_nome,
+                   g.descricao as grupo_descricao,
+                   u.nome as convidado_por_nome
+            FROM convites_grupo cg
+            LEFT JOIN grupos g ON cg.grupo_id = g.id
+            LEFT JOIN usuarios u ON cg.convidado_por = u.id
+            WHERE (cg.usuario_convidado_id = $1 OR cg.email_convidado = $2)
+              AND cg.status = 'pendente' 
+              AND cg.data_expiracao > NOW()
+            ORDER BY cg.data_criacao DESC
+        `;
+        
+        const result = await this.db.query(query, [usuarioId, email]);
+        
+        return result.rows.map((row: any) => ({
+            id: row.id,
+            grupo_id: row.grupo_id,
+            convidado_por: row.convidado_por,
+            email_convidado: row.email_convidado,
+            usuario_convidado_id: row.usuario_convidado_id,
+            codigo_convite: row.codigo_convite,
+            status: row.status,
+            mensagem_personalizada: row.mensagem_personalizada,
+            data_criacao: row.data_criacao,
+            data_expiracao: row.data_expiracao,
+            data_resposta: row.data_resposta,
+            grupo_nome: row.grupo_nome,
+            grupo_descricao: row.grupo_descricao,
+            convidado_por_nome: row.convidado_por_nome
+        }));
+    }
+
+    async verificarConvitePendente(grupoId: string, email: string): Promise<boolean> {
+        const query = `
+            SELECT id FROM convites_grupo 
+            WHERE grupo_id = $1 AND email_convidado = $2 
+              AND status = 'pendente' AND data_expiracao > NOW()
+        `;
+        
+        const result = await this.db.query(query, [grupoId, email]);
+        return result.rows.length > 0;
+    }
+
+    async cancelarConvite(codigo: string, usuarioId: string): Promise<boolean> {
+        const query = `
+            UPDATE convites_grupo 
+            SET status = 'expirado'
+            WHERE codigo_convite = $1 AND convidado_por = $2 AND status = 'pendente'
+        `;
+        
+        const result = await this.db.query(query, [codigo, usuarioId]);
+        return result.rowCount > 0;
+    }
 }

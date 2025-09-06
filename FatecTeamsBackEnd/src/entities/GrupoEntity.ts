@@ -4,15 +4,15 @@ import { v4 as uuidv4 } from 'uuid';
 export interface IGrupoCreate {
     nome: string;
     descricao?: string;
-    tipo: 'publico' | 'privado' | 'fechado';
+    tipo: 'publico' | 'privado' | 'fechado' | 'secreto';
     configuracoes?: any;
-    criado_por: string;
+    criador_id: string;
 }
 
 export interface IGrupoUpdate {
     nome?: string;
     descricao?: string;
-    tipo?: 'publico' | 'privado' | 'fechado';
+    tipo?: 'publico' | 'privado' | 'fechado' | 'secreto';
     configuracoes?: any;
 }
 
@@ -75,13 +75,13 @@ export class GrupoEntity {
         }
 
         // Validação do tipo
-        const tiposValidos = ['publico', 'privado', 'fechado'];
+        const tiposValidos = ['publico', 'privado', 'fechado', 'secreto'];
         if (!this.dados.tipo || !tiposValidos.includes(this.dados.tipo)) {
-            erros.push('Tipo de grupo inválido. Use: publico, privado ou fechado');
+            erros.push('Tipo de grupo inválido. Use: publico, privado, fechado ou secreto');
         }
 
         // Validação do criador
-        if (!this.dados.criado_por) {
+        if (!this.dados.criador_id) {
             erros.push('Criador do grupo é obrigatório');
         }
 
@@ -119,7 +119,7 @@ export class GrupoEntity {
             // Adicionar o criador como admin do grupo
             await this.grupoRepository.adicionarMembro({
                 grupo_id: grupoId,
-                usuario_id: this.dados.criado_por,
+                usuario_id: this.dados.criador_id,
                 nivel_permissao: 'admin',
                 pode_convidar: true,
                 pode_remover: true,
@@ -438,9 +438,9 @@ export class GrupoEntity {
         }
     }
 
-    public async buscarPublicos(termo?: string, limite?: number, offset?: number): Promise<{ sucesso: boolean; grupos?: IGrupo[]; erros?: string[] }> {
+    public async buscarPublicos(termo?: string, limite?: number, offset?: number, usuarioId?: string): Promise<{ sucesso: boolean; grupos?: IGrupo[]; erros?: string[] }> {
         try {
-            const grupos = await this.grupoRepository.buscarPublicos(termo, limite, offset);
+            const grupos = await this.grupoRepository.buscarPublicos(termo, limite, offset, usuarioId);
 
             return {
                 sucesso: true,
@@ -449,6 +449,30 @@ export class GrupoEntity {
 
         } catch (error) {
             console.error('Erro ao buscar grupos públicos:', error);
+            return {
+                sucesso: false,
+                erros: ['Erro interno do servidor']
+            };
+        }
+    }
+
+    public async entrarGrupoPublico(grupoId: string, usuarioId: string): Promise<{ sucesso: boolean; erros?: string[] }> {
+        try {
+            const sucesso = await this.grupoRepository.entrarGrupoPublico(grupoId, usuarioId);
+
+            if (!sucesso) {
+                return {
+                    sucesso: false,
+                    erros: ['Grupo não encontrado ou não é público']
+                };
+            }
+
+            return {
+                sucesso: true
+            };
+
+        } catch (error) {
+            console.error('Erro ao entrar no grupo:', error);
             return {
                 sucesso: false,
                 erros: ['Erro interno do servidor']
@@ -485,6 +509,48 @@ export class GrupoEntity {
 
         } catch (error) {
             console.error('Erro ao obter estatísticas do grupo:', error);
+            return {
+                sucesso: false,
+                erros: ['Erro interno do servidor']
+            };
+        }
+    }
+
+    public async verificarPermissao(grupoId: string, usuarioId: string): Promise<{ sucesso: boolean; permissao?: any; erros?: string[] }> {
+        try {
+            const permissao = await this.grupoRepository.verificarPermissao(grupoId, usuarioId);
+
+            return {
+                sucesso: true,
+                permissao
+            };
+
+        } catch (error) {
+            console.error('Erro ao verificar permissão:', error);
+            return {
+                sucesso: false,
+                erros: ['Erro interno do servidor']
+            };
+        }
+    }
+
+    public async alterarNivelMembro(grupoId: string, usuarioId: string, novoNivel: string): Promise<{ sucesso: boolean; erros?: string[] }> {
+        try {
+            const resultado = await this.grupoRepository.alterarNivelMembro(grupoId, usuarioId, novoNivel);
+
+            if (!resultado) {
+                return {
+                    sucesso: false,
+                    erros: ['Não foi possível alterar o nível do membro']
+                };
+            }
+
+            return {
+                sucesso: true
+            };
+
+        } catch (error) {
+            console.error('Erro ao alterar nível do membro:', error);
             return {
                 sucesso: false,
                 erros: ['Erro interno do servidor']

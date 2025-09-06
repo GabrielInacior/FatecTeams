@@ -11,9 +11,14 @@ export class ConviteController {
     private conviteRepository: ConviteRepository;
 
     constructor() {
-        this.grupoRepository = new GrupoRepository();
-        this.usuarioRepository = new UsuarioRepository();
-        this.conviteRepository = new ConviteRepository();
+        try {
+            this.grupoRepository = new GrupoRepository();
+            this.usuarioRepository = new UsuarioRepository();
+            this.conviteRepository = new ConviteRepository();
+        } catch (error) {
+            console.error('Erro ao inicializar ConviteController:', error);
+            throw error;
+        }
     }
 
     /**

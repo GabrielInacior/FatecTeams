@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import { ApiResponse } from '../types';
 
 // Configuração base da API
@@ -14,6 +15,31 @@ const STORAGE_KEYS = {
   REFRESH_TOKEN: 'refresh_token',
   USER_DATA: 'user_data',
 } as const;
+
+// Função auxiliar para armazenamento seguro multiplataforma
+const secureStorage = {
+  async getItem(key: string): Promise<string | null> {
+    if (Platform.OS === 'web') {
+      return await AsyncStorage.getItem(key);
+    } else {
+      return await SecureStore.getItemAsync(key);
+    }
+  },
+  async setItem(key: string, value: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      await AsyncStorage.setItem(key, value);
+    } else {
+      await SecureStore.setItemAsync(key, value);
+    }
+  },
+  async deleteItem(key: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      await AsyncStorage.removeItem(key);
+    } else {
+      await SecureStore.deleteItemAsync(key);
+    }
+  }
+};
 
 class ApiService {
   private api: AxiosInstance;
@@ -41,7 +67,7 @@ class ApiService {
     this.api.interceptors.request.use(
       async (config) => {
         try {
-          const token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+          const token = await secureStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
           if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`;
           }
@@ -131,7 +157,7 @@ class ApiService {
 
   private async refreshAccessToken(): Promise<string | null> {
     try {
-      const refreshToken = await SecureStore.getItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
+      const refreshToken = await secureStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
       
       if (!refreshToken) {
         throw new Error('Refresh token não encontrado');
@@ -143,9 +169,9 @@ class ApiService {
 
       const { accessToken, refreshToken: newRefreshToken } = response.data.dados;
 
-      await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+      await secureStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
       if (newRefreshToken) {
-        await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
+        await secureStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
       }
 
       return accessToken;
@@ -158,8 +184,8 @@ class ApiService {
   public async saveAuthData(accessToken: string, refreshToken: string, userData: any): Promise<void> {
     try {
       await Promise.all([
-        SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, accessToken),
-        SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, refreshToken),
+        secureStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken),
+        secureStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken),
         AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData)),
       ]);
     } catch (error) {
@@ -171,8 +197,8 @@ class ApiService {
   public async clearAuthData(): Promise<void> {
     try {
       await Promise.all([
-        SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN),
-        SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN),
+        secureStorage.deleteItem(STORAGE_KEYS.ACCESS_TOKEN),
+        secureStorage.deleteItem(STORAGE_KEYS.REFRESH_TOKEN),
         AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA),
       ]);
     } catch (error) {
@@ -192,7 +218,7 @@ class ApiService {
 
   public async isAuthenticated(): Promise<boolean> {
     try {
-      const token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+      const token = await secureStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
       return !!token;
     } catch (error) {
       return false;

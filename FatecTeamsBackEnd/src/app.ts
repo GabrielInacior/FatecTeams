@@ -13,6 +13,7 @@ import routes from './routes';
 import { ErrorMiddleware } from './middlewares/ErrorMiddleware';
 import { RateLimitMiddleware } from './middlewares/RateLimitMiddleware';
 import { LoggingMiddleware } from './middlewares/LoggingMiddleware';
+import { ApiInterceptorMiddleware } from './middlewares/ApiInterceptorMiddleware';
 import { WebSocketService } from './services/WebSocketService';
 import { Logger } from './utils/Logger';
 import './types/socket'; // Importar extensão de tipos do Socket
@@ -70,6 +71,11 @@ export class App {
 
         // Rate limiting global
         this.app.use(RateLimitMiddleware.global);
+
+        // Middleware de interceptação de API (só em desenvolvimento)
+        if (config.NODE_ENV === 'development') {
+            this.app.use(ApiInterceptorMiddleware.intercept);
+        }
 
         // Middleware de logging personalizado (só em desenvolvimento)
         if (config.NODE_ENV === 'development') {
@@ -279,7 +285,12 @@ export class App {
     // ============================================
     
     private initializeErrorHandling(): void {
-        // Middleware de tratamento de erros
+        // Middleware de tratamento de erros do ApiInterceptor (para erros não tratados)
+        if (config.NODE_ENV === 'development') {
+            this.app.use(ApiInterceptorMiddleware.errorHandler);
+        }
+        
+        // Middleware de tratamento de erros padrão
         this.app.use(ErrorMiddleware.handleError);
 
         // Tratar erros não capturados

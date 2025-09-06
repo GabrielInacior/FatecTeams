@@ -473,6 +473,42 @@ const authSlice = createSlice({
       });
 
     // ============================================
+    // UPDATE USER PROFILE
+    // ============================================
+    builder
+      .addCase(updateUserProfileAsync.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(updateUserProfileAsync.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload;
+        state.error = null;
+      })
+      .addCase(updateUserProfileAsync.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // ============================================
+    // UPLOAD PROFILE PHOTO
+    // ============================================
+    builder
+      .addCase(uploadProfilePhotoAsync.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(uploadProfilePhotoAsync.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload;
+        state.error = null;
+      })
+      .addCase(uploadProfilePhotoAsync.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // ============================================
     // LOAD STORED USER
     // ============================================
     builder

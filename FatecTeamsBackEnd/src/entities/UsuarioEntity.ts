@@ -244,13 +244,21 @@ export class UsuarioEntity {
                     throw new Error('Formato de telefone inválido');
                 }
                 this.telefone = dados.telefone.trim();
-            } else {
+            } else if (dados.telefone === null || dados.telefone === '') {
+                // Só limpar o telefone se explicitamente enviado como null ou string vazia
                 this.telefone = undefined;
             }
+            // Se dados.telefone for undefined, não modifica o valor atual
         }
 
         if (dados.foto_perfil !== undefined) {
-            this.foto_perfil = dados.foto_perfil || undefined;
+            if (dados.foto_perfil === null || dados.foto_perfil === '') {
+                // Só limpar a foto se explicitamente enviado como null ou string vazia
+                this.foto_perfil = undefined;
+            } else if (dados.foto_perfil) {
+                this.foto_perfil = dados.foto_perfil;
+            }
+            // Se dados.foto_perfil for undefined, não modifica o valor atual
         }
 
         this.data_atualizacao = new Date();

@@ -229,6 +229,13 @@ export class UsuarioController {
     // ============================================
     public atualizarPerfilUsuario = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
         try {
+            console.log('🔍 DEBUG - Dados recebidos no controller:');
+            console.log('  req.body:', JSON.stringify(req.body, null, 2));
+            console.log('  req.user:', req.user);
+            console.log('  Content-Type:', req.headers['content-type']);
+            console.log('  Method:', req.method);
+            console.log('  URL:', req.originalUrl);
+            
             if (!req.user) {
                 res.status(401).json({
                     sucesso: false,
@@ -239,6 +246,25 @@ export class UsuarioController {
             }
 
             const { nome, telefone, foto_perfil } = req.body;
+            
+            console.log('🔍 DEBUG - Dados extraídos:');
+            console.log('  nome:', nome);
+            console.log('  telefone:', telefone);
+            console.log('  foto_perfil:', foto_perfil);
+            
+            // Criar objeto apenas com os campos que foram efetivamente enviados
+            const camposParaAtualizar: any = {};
+            if (req.body.hasOwnProperty('nome')) {
+                camposParaAtualizar.nome = nome;
+            }
+            if (req.body.hasOwnProperty('telefone')) {
+                camposParaAtualizar.telefone = telefone;
+            }
+            if (req.body.hasOwnProperty('foto_perfil')) {
+                camposParaAtualizar.foto_perfil = foto_perfil;
+            }
+            
+            console.log('🔍 DEBUG - Campos que serão atualizados:', camposParaAtualizar);
 
             // Buscar usuário atual
             const usuarioData = await this.usuarioRepository.buscarPorId(req.user.id);
@@ -254,7 +280,7 @@ export class UsuarioController {
 
             // Criar entidade e atualizar dados
             const usuario = UsuarioEntity.fromDatabase(usuarioData);
-            usuario.atualizarPerfil({ nome, telefone, foto_perfil });
+            usuario.atualizarPerfil(camposParaAtualizar);
 
             // Persistir alterações
             const usuarioAtualizado = await usuario.persist();

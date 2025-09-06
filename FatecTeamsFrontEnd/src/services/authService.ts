@@ -59,9 +59,20 @@ class AuthService {
    */
   async loginWithGoogle(idToken: string, accessToken?: string): Promise<AuthResponse> {
     try {
+      console.log('📡 Enviando para backend:', {
+        endpoint: '/auth/google',
+        idToken: idToken?.substring(0, 50) + '...',
+        accessToken: accessToken?.substring(0, 50) + '...'
+      });
+      
       const response = await apiService.post<AuthResponse>('/auth/google', {
         idToken,
         accessToken,
+      });
+      
+      console.log('📥 Resposta do backend:', {
+        sucesso: response.sucesso,
+        mensagem: response.mensagem
       });
       
       if (response.sucesso && response.dados) {

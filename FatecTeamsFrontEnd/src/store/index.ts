@@ -67,6 +67,11 @@ const persistedRootReducer = combineReducers({
   chat: chatReducer,
   tarefas: tarefasReducer,
   notificacoes: notificacoesReducer,
+  convites: convitesReducer,
+  arquivos: arquivosReducer,
+  eventos: eventosReducer,
+  historico: historicoReducer,
+  relatorios: relatoriosReducer,
 });
 
 export const store = configureStore({

@@ -178,7 +178,7 @@ export class EventoEntity {
             const evento: IEvento = {
                 id: uuidv4(),
                 grupo_id: dadosEvento.grupo_id,
-                criado_por: dadosEvento.criador_id,
+                criador_id: dadosEvento.criador_id,
                 titulo: dadosEvento.titulo,
                 descricao: dadosEvento.descricao,
                 data_inicio: dadosEvento.data_inicio,
@@ -465,7 +465,7 @@ export class EventoEntity {
             }
 
             // Verificar se usuário é o criador ou tem permissão
-            if (evento.criado_por !== usuarioId) {
+            if (evento.criador_id !== usuarioId) {
                 const membro = await this.grupoRepository.verificarPermissao(evento.grupo_id, usuarioId);
                 if (!membro || membro.nivel_permissao !== 'admin') {
                     return {

@@ -1,15 +1,12 @@
 import React, { useEffect } from 'react';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSpring,
-  withDelay,
-  FadeIn,
-  SlideInUp,
-  SlideInRight,
-} from 'react-native-reanimated';
 import { ViewProps } from 'react-native';
+import Animated, {
+    useAnimatedStyle,
+    useSharedValue,
+    withDelay,
+    withSpring,
+    withTiming
+} from 'react-native-reanimated';
 
 // Componente para animação de fade in com delay
 interface FadeInViewProps extends ViewProps {

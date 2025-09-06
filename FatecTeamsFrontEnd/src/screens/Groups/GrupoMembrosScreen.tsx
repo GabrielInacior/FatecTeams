@@ -1,15 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  FlatList,
-  Alert,
-  Image,
-  TextInput,
+    Alert,
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
@@ -17,10 +17,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import Header from '../../components/common/Header';
 import { useTheme } from '../../hooks/useTheme';
 import { AppDispatch, RootState } from '../../store';
-import { 
-  removeMembroGrupo, 
-  updateMembroPapel,
-  getMembrosGrupo,
+import {
+    getMembrosGrupo,
+    removeMembroGrupo,
+    updateMembroPapel,
 } from '../../store/gruposSlice';
 
 const GrupoMembrosScreen: React.FC = () => {

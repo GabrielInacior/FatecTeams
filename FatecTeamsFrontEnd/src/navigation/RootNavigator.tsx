@@ -13,13 +13,13 @@ import {
     SettingsScreen,
 } from '../screens';
 import AccountDeactivatedScreen from '../screens/Auth/AccountDeactivatedScreen';
-import EditProfileScreen from '../screens/Settings/EditProfileScreen';
-import GruposScreen from '../screens/Groups/GruposScreen';
+import GrupoConvitesScreen from '../screens/Groups/GrupoConvitesScreen';
 import GrupoDetalhesScreen from '../screens/Groups/GrupoDetalhesScreen';
 import GrupoMembrosScreen from '../screens/Groups/GrupoMembrosScreen';
-import GrupoConvitesScreen from '../screens/Groups/GrupoConvitesScreen';
+import GruposScreen from '../screens/Groups/GruposScreen';
+import EditProfileScreen from '../screens/Settings/EditProfileScreen';
 import { RootState } from '../store';
-import { AppStackParamList, AppTabParamList, AuthStackParamList, SettingsStackParamList, GruposStackParamList } from '../types/navigation';
+import { AppTabParamList, AuthStackParamList, GruposStackParamList, SettingsStackParamList } from '../types/navigation';
 
 const AuthStack = createStackNavigator<AuthStackParamList>();
 const AppTab = createBottomTabNavigator<AppTabParamList>();

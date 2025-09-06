@@ -1,24 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  FlatList,
-  Alert,
-  TextInput,
-  Modal,
-  ScrollView,
+    Alert,
+    FlatList,
+    Modal,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 
 import Header from '../../components/common/Header';
 import { useTheme } from '../../hooks/useTheme';
-import { AppDispatch, RootState } from '../../store';
 import convitesService from '../../services/convitesService';
+import { AppDispatch } from '../../store';
 
 interface Convite {
   id: string;

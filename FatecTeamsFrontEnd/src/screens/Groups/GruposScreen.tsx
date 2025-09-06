@@ -1,37 +1,36 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import React, { useCallback, useState, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  FlatList,
-  RefreshControl,
-  Alert,
-  TextInput,
+    Alert,
+    FlatList,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
-import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 
+import { FadeInView, SlideUpView } from '../../components/animations/AnimatedComponents';
 import Header from '../../components/common/Header';
 import { useTheme } from '../../hooks/useTheme';
 import { AppDispatch, RootState } from '../../store';
 import {
-  fetchGrupos,
-  createGrupo,
-  updateGrupoAsync,
-  deleteGrupo,
-  clearError,
-  setSearchTerm,
-  setFiltros,
-  clearFiltros,
+    clearFiltros,
+    createGrupo,
+    deleteGrupo,
+    fetchGrupos,
+    setFiltros,
+    setSearchTerm,
+    updateGrupoAsync
 } from '../../store/gruposSlice';
-import { FadeInView, SlideUpView } from '../../components/animations/AnimatedComponents';
-import GrupoCard from './components/GrupoCard';
-import FiltrosGrupos from './components/FiltrosGrupos';
 import CreateEditGrupoModal from './components/CreateEditGrupoModal';
+import FiltrosGrupos from './components/FiltrosGrupos';
+import GrupoCard from './components/GrupoCard';
 
 const GruposScreen: React.FC = () => {
   const navigation = useNavigation<any>();

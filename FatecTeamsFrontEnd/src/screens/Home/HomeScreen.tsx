@@ -1,23 +1,23 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import React, { useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Image,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { useSelector, useDispatch } from 'react-redux';
-import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { useDispatch, useSelector } from 'react-redux';
 
-import { RootState, AppDispatch } from '../../store';
-import { useTheme } from '../../hooks/useTheme';
-import { fetchGrupos } from '../../store/gruposSlice';
+import { FadeInView, ScaleView, SlideUpView } from '../../components/animations/AnimatedComponents';
 import Header from '../../components/common/Header';
+import { useTheme } from '../../hooks/useTheme';
+import { AppDispatch, RootState } from '../../store';
+import { fetchGrupos } from '../../store/gruposSlice';
 import HomeCardGrupo from './components/HomeCardGrupo';
-import { FadeInView, SlideUpView, ScaleView } from '../../components/animations/AnimatedComponents';
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<any>();

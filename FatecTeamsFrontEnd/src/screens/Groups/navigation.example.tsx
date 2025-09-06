@@ -1,13 +1,12 @@
 // Exemplo de como integrar as telas de grupos na navegação
 // Este arquivo serve como referência para implementação
 
-import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import { 
-  GruposScreen, 
-  GrupoDetalhesScreen, 
-  GrupoMembrosScreen, 
-  GrupoConvitesScreen 
+import {
+    GrupoConvitesScreen,
+    GrupoDetalhesScreen,
+    GrupoMembrosScreen,
+    GruposScreen
 } from './index';
 
 const Stack = createStackNavigator();

@@ -2,8 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
-import { ApiResponse } from '../types';
 import { appConfig } from '../config/app';
+import { ApiResponse } from '../types';
 
 // Usar configuração centralizada
 const API_BASE_URL = appConfig.API_BASE_URL;

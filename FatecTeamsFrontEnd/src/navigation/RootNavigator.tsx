@@ -18,6 +18,7 @@ import GrupoDetalhesScreen from '../screens/Groups/GrupoDetalhesScreen';
 import GrupoMembrosScreen from '../screens/Groups/GrupoMembrosScreen';
 import GruposScreen from '../screens/Groups/GruposScreen';
 import EditProfileScreen from '../screens/Settings/EditProfileScreen';
+import { useTheme } from '../hooks/useTheme';
 import { RootState } from '../store';
 import { AppTabParamList, AuthStackParamList, GruposStackParamList, SettingsStackParamList } from '../types/navigation';
 
@@ -64,6 +65,8 @@ const GruposNavigator: React.FC = () => {
 };
 
 const AppNavigator: React.FC = () => {
+  const { theme } = useTheme();
+
   return (
     <AppTab.Navigator 
       screenOptions={({ route }) => ({
@@ -83,12 +86,12 @@ const AppNavigator: React.FC = () => {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#1E88E5',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: theme.colors.card,
           borderTopWidth: 1,
-          borderTopColor: '#E0E0E0',
+          borderTopColor: theme.colors.border,
           paddingTop: 5,
           paddingBottom: 5,
         },
@@ -121,23 +124,57 @@ const AppNavigator: React.FC = () => {
 };
 
 const LoadingScreen: React.FC = () => {
+  const { theme } = useTheme();
+
   return (
     <View style={{
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: '#1E88E5', // Cor primária do tema
+      backgroundColor: theme.colors.background,
     }}>
-      <ActivityIndicator size="large" color="#FFFFFF" />
+      <ActivityIndicator size="large" color={theme.colors.primary} />
     </View>
   );
 };
 
 const RootNavigator: React.FC = () => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { theme } = useTheme();
+
+  // Tema personalizado para o Navigation Container
+  const navigationTheme = {
+    dark: theme.isDark,
+    colors: {
+      primary: theme.colors.primary,
+      background: theme.colors.background,
+      card: theme.colors.card,
+      text: theme.colors.text,
+      border: theme.colors.border,
+      notification: theme.colors.primary,
+    },
+    fonts: {
+      regular: {
+        fontFamily: 'System',
+        fontWeight: 'normal' as const,
+      },
+      medium: {
+        fontFamily: 'System',
+        fontWeight: '500' as const,
+      },
+      bold: {
+        fontFamily: 'System',
+        fontWeight: 'bold' as const,
+      },
+      heavy: {
+        fontFamily: 'System',
+        fontWeight: '900' as const,
+      },
+    },
+  };
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
       {isAuthenticated ? <AppNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );

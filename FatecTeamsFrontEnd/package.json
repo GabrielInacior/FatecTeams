@@ -8,7 +8,7 @@
     "start:prod": "npm run env:prod && expo start",
     "start:staging": "npm run env:staging && expo start",
     "android": "expo start --android",
-    "ios": "expo start --ios", 
+    "ios": "expo start --ios",
     "web": "expo start --web",
     "env:dev": "node scripts/set-environment.js development",
     "env:prod": "node scripts/set-environment.js production",
@@ -38,7 +38,6 @@
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-web": "^0.20.0",
-    "react-native-worklets": "^0.5.0",
     "react-redux": "^9.2.0",
     "redux-persist": "^6.0.0"
   },

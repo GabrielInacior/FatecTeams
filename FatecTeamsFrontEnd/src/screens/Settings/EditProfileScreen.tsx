@@ -1,32 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  Image,
-  Alert,
-  ScrollView,
-  ActivityIndicator,
-} from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
-import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
+import React, { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { RootState, AppDispatch } from '../../store';
-import { updateUserProfileAsync, uploadProfilePhotoAsync } from '../../store/authSlice';
-import { useTheme } from '../../hooks/useTheme';
 import Header from '../../components/common/Header';
+import { useUserProfile } from '../../hooks/useAuth';
+import { useTheme } from '../../hooks/useTheme';
 
 const EditProfileScreen: React.FC = () => {
   const navigation = useNavigation();
-  const dispatch = useDispatch<AppDispatch>();
   const { theme } = useTheme();
-  
-  const { user, isLoading } = useSelector((state: RootState) => state.auth);
+  const { user, isLoading, updateProfile, uploadPhoto } = useUserProfile();
   
   const [nome, setNome] = useState(user?.nome || '');
   const [telefone, setTelefone] = useState(user?.telefone || '');
@@ -64,16 +60,9 @@ const EditProfileScreen: React.FC = () => {
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
         
-        // Criar objeto File para upload
-        const file = {
-          uri: asset.uri,
-          type: asset.type || 'image/jpeg',
-          name: `profile_${Date.now()}.jpg`,
-        } as any;
-
         try {
           setIsUpdating(true);
-          await dispatch(uploadProfilePhotoAsync(file)).unwrap();
+          await uploadPhoto(asset.uri, `profile_${Date.now()}.jpg`);
           Alert.alert('Sucesso', 'Foto de perfil atualizada com sucesso!');
         } catch (error: any) {
           Alert.alert('Erro', error.message || 'Erro ao atualizar foto de perfil');
@@ -95,10 +84,10 @@ const EditProfileScreen: React.FC = () => {
 
     try {
       setIsUpdating(true);
-      await dispatch(updateUserProfileAsync({
+      await updateProfile({
         nome: nome.trim(),
         telefone: telefone.trim() || undefined,
-      })).unwrap();
+      });
       
       Alert.alert('Sucesso', 'Perfil atualizado com sucesso!', [
         { text: 'OK', onPress: () => navigation.goBack() }

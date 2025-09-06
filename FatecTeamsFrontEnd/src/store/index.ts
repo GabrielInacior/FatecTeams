@@ -1,19 +1,19 @@
-import { configureStore, combineReducers } from '@reduxjs/toolkit';
-import { persistStore, persistReducer, PersistConfig } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { combineReducers, configureStore } from '@reduxjs/toolkit';
+import { PersistConfig, persistReducer, persistStore } from 'redux-persist';
 
 // Importar slices
-import authReducer from './authSlice';
-import themeReducer from './themeSlice';
-import gruposReducer from './gruposSlice';
-import chatReducer from './chatSlice';
-import tarefasReducer from './tarefasSlice';
-import notificacoesReducer from './notificacoesSlice';
-import convitesReducer from './convitesSlice';
 import arquivosReducer from './arquivosSlice';
+import authReducer from './authSlice';
+import chatReducer from './chatSlice';
+import convitesReducer from './convitesSlice';
 import eventosReducer from './eventosSlice';
+import gruposReducer from './gruposSlice';
 import historicoReducer from './historicoSlice';
+import notificacoesReducer from './notificacoesSlice';
 import relatoriosReducer from './relatoriosSlice';
+import tarefasReducer from './tarefasSlice';
+import themeReducer from './themeSlice';
 
 // ============================================
 // ROOT REDUCER

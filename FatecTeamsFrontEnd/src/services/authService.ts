@@ -1,11 +1,11 @@
-import apiService from './api';
-import { 
-  AuthResponse, 
-  LoginRequest, 
-  RegisterRequest,
-  User,
-  ApiResponse
+import {
+    ApiResponse,
+    AuthResponse,
+    LoginRequest,
+    RegisterRequest,
+    User
 } from '../types';
+import apiService from './api';
 
 class AuthService {
   // ============================================
@@ -28,8 +28,22 @@ class AuthService {
       }
       
       return response;
-    } catch (error) {
-      throw new Error(apiService.handleError(error));
+    } catch (error: any) {
+      // Limpar tokens antigos em caso de erro de autenticação
+      if (error?.response?.status === 401) {
+        await apiService.clearAuthData();
+      }
+      
+      const errorMessage = apiService.handleError(error);
+      
+      // Verificar se é erro específico de conta desativada
+      if (errorMessage.includes('desativada') || 
+          errorMessage.includes('Conta desativada') ||
+          (error?.response?.status === 401 && errorMessage.includes('não autorizado'))) {
+        throw new Error('Conta desativada. Entre em contato com o suporte ou reative sua conta.');
+      }
+      
+      throw new Error(errorMessage);
     }
   }
 
@@ -171,11 +185,15 @@ class AuthService {
    */
   async logout(): Promise<void> {
     try {
+      // Tentar fazer logout no servidor, mas não falhar se der erro de autenticação
       await apiService.post('/auth/logout');
-    } catch (error) {
-      // Continuar mesmo se o logout no servidor falhar
-      console.error('Erro ao fazer logout no servidor:', error);
+    } catch (error: any) {
+      // Se o erro for 401 (não autorizado), ignorar pois provavelmente o token já expirou
+      if (error?.response?.status !== 401) {
+        console.error('Erro ao fazer logout no servidor:', error);
+      }
     } finally {
+      // Sempre limpar dados locais, independente do resultado do servidor
       await apiService.clearAuthData();
     }
   }
@@ -257,12 +275,20 @@ class AuthService {
   /**
    * Upload de foto de perfil
    */
-  async uploadProfilePhoto(photo: File): Promise<ApiResponse<User>> {
+  async uploadProfilePhoto(imageUri: string, fileName?: string): Promise<ApiResponse<{ foto_perfil: string }>> {
     try {
       const formData = new FormData();
-      formData.append('foto', photo);
       
-      return await apiService.post<ApiResponse<User>>('/usuarios/foto-perfil', formData);
+      // No React Native, precisamos criar um objeto com uri, type e name
+      const imageFile = {
+        uri: imageUri,
+        type: 'image/jpeg', // ou detectar automaticamente
+        name: fileName || 'profile-photo.jpg',
+      } as any;
+      
+      formData.append('foto', imageFile);
+      
+      return await apiService.post<ApiResponse<{ foto_perfil: string }>>('/usuarios/foto-perfil', formData);
     } catch (error) {
       throw new Error(apiService.handleError(error));
     }
@@ -273,11 +299,34 @@ class AuthService {
    */
   async deactivateAccount(): Promise<ApiResponse<string>> {
     try {
+      // Verificar se há token válido antes de fazer a requisição
+      const isAuth = await this.isAuthenticated();
+      if (!isAuth) {
+        throw new Error('Usuário não está autenticado. Faça login novamente.');
+      }
+
       const response = await apiService.delete<ApiResponse<string>>('/usuarios/perfil');
       
       // Limpar dados locais após desativar conta
       await apiService.clearAuthData();
       
+      return response;
+    } catch (error: any) {
+      // Se o erro for de autenticação, limpar dados e retornar erro específico
+      if (error?.response?.status === 401) {
+        await apiService.clearAuthData();
+        throw new Error('Sua sessão expirou. Faça login novamente para desativar sua conta.');
+      }
+      throw new Error(apiService.handleError(error));
+    }
+  }
+
+  /**
+   * Reativar conta do usuário
+   */
+  async reactivateAccount(email: string): Promise<ApiResponse<string>> {
+    try {
+      const response = await apiService.post<ApiResponse<string>>('/auth/reativar-conta', { email });
       return response;
     } catch (error) {
       throw new Error(apiService.handleError(error));

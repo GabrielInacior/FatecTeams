@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { AuthenticatedRequest } from '../types';
 import { AuthMiddleware } from '../middlewares/AuthMiddleware';
 import { UsuarioRepository } from '../repositories/UsuarioRepository';
 import { AuthTradicionalService } from '../services/AuthTradicionalService';
 import { GoogleOAuthService, IGoogleUserInfo } from '../services/GoogleOAuthService';
+import { AuthenticatedRequest } from '../types';
 
 export class AuthController {
     private usuarioRepository: UsuarioRepository;
@@ -605,6 +605,65 @@ export class AuthController {
 
         } catch (error) {
             console.error('Erro ao alterar senha:', error);
+            res.status(500).json({
+                sucesso: false,
+                mensagem: 'Erro interno do servidor',
+                timestamp: new Date().toISOString()
+            });
+        }
+    };
+
+    // ============================================
+    // REATIVAR CONTA DESATIVADA
+    // ============================================
+
+    public reativarConta = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { email } = req.body;
+
+            if (!email) {
+                res.status(400).json({
+                    sucesso: false,
+                    mensagem: 'Email é obrigatório',
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            // Buscar usuário por email
+            const usuario = await this.usuarioRepository.buscarPorEmail(email);
+
+            if (!usuario) {
+                res.status(404).json({
+                    sucesso: false,
+                    mensagem: 'Usuário não encontrado',
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            // Verificar se a conta realmente está desativada
+            if (usuario.status_ativo) {
+                res.status(400).json({
+                    sucesso: false,
+                    mensagem: 'Esta conta já está ativa',
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
+
+            // Reativar a conta
+            const usuarioAtualizado = { ...usuario, status_ativo: true, data_atualizacao: new Date() };
+            await this.usuarioRepository.atualizar(usuarioAtualizado);
+
+            res.status(200).json({
+                sucesso: true,
+                mensagem: 'Conta reativada com sucesso. Agora você pode fazer login normalmente.',
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Erro ao reativar conta:', error);
             res.status(500).json({
                 sucesso: false,
                 mensagem: 'Erro interno do servidor',

@@ -1,24 +1,30 @@
-import React from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, ActivityIndicator } from 'react-native';
+import React from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { useSelector } from 'react-redux';
-import { Ionicons } from '@expo/vector-icons';
-import { RootState } from '../store';
 import {
-  LoginScreen,
-  RegisterScreen,
-  ForgotPasswordScreen,
-  HomeScreen,
-  SettingsScreen,
+    ForgotPasswordScreen,
+    HomeScreen,
+    LoginScreen,
+    RegisterScreen,
+    SettingsScreen,
 } from '../screens';
+import AccountDeactivatedScreen from '../screens/Auth/AccountDeactivatedScreen';
 import EditProfileScreen from '../screens/Settings/EditProfileScreen';
-import { AuthStackParamList, AppStackParamList, SettingsStackParamList } from '../types/navigation';
+import GruposScreen from '../screens/Groups/GruposScreen';
+import GrupoDetalhesScreen from '../screens/Groups/GrupoDetalhesScreen';
+import GrupoMembrosScreen from '../screens/Groups/GrupoMembrosScreen';
+import GrupoConvitesScreen from '../screens/Groups/GrupoConvitesScreen';
+import { RootState } from '../store';
+import { AppStackParamList, AppTabParamList, AuthStackParamList, SettingsStackParamList, GruposStackParamList } from '../types/navigation';
 
 const AuthStack = createStackNavigator<AuthStackParamList>();
-const AppTab = createBottomTabNavigator<AppStackParamList>();
+const AppTab = createBottomTabNavigator<AppTabParamList>();
 const SettingsStack = createStackNavigator<SettingsStackParamList>();
+const GruposStack = createStackNavigator<GruposStackParamList>();
 
 const AuthNavigator: React.FC = () => {
   return (
@@ -32,6 +38,7 @@ const AuthNavigator: React.FC = () => {
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="Register" component={RegisterScreen} />
       <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <AuthStack.Screen name="AccountDeactivated" component={AccountDeactivatedScreen} />
     </AuthStack.Navigator>
   );
 };
@@ -45,6 +52,17 @@ const SettingsNavigator: React.FC = () => {
   );
 };
 
+const GruposNavigator: React.FC = () => {
+  return (
+    <GruposStack.Navigator screenOptions={{ headerShown: false }}>
+      <GruposStack.Screen name="GruposMain" component={GruposScreen} />
+      <GruposStack.Screen name="GrupoDetalhes" component={GrupoDetalhesScreen} />
+      <GruposStack.Screen name="GrupoMembros" component={GrupoMembrosScreen} />
+      <GruposStack.Screen name="GrupoConvites" component={GrupoConvitesScreen} />
+    </GruposStack.Navigator>
+  );
+};
+
 const AppNavigator: React.FC = () => {
   return (
     <AppTab.Navigator 
@@ -55,6 +73,8 @@ const AppNavigator: React.FC = () => {
 
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Grupos') {
+            iconName = focused ? 'people' : 'people-outline';
           } else if (route.name === 'Settings') {
             iconName = focused ? 'settings' : 'settings-outline';
           } else {
@@ -80,6 +100,13 @@ const AppNavigator: React.FC = () => {
         component={HomeScreen} 
         options={{
           tabBarLabel: 'Início',
+        }}
+      />
+      <AppTab.Screen 
+        name="Grupos" 
+        component={GruposNavigator} 
+        options={{
+          tabBarLabel: 'Grupos',
         }}
       />
       <AppTab.Screen 

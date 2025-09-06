@@ -1,6 +1,6 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { User, AuthState, LoginRequest, RegisterRequest } from '../types';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import authService from '../services/authService';
+import { AuthState, LoginRequest, RegisterRequest, User } from '../types';
 
 // ============================================
 // INITIAL STATE
@@ -101,7 +101,9 @@ export const logoutAsync = createAsyncThunk(
       await authService.logout();
       return null;
     } catch (error) {
-      // Mesmo se falhar, vamos limpar o estado local
+      // Para logout, sempre retornar sucesso para limpar o estado local
+      // mesmo se falhar no servidor
+      console.warn('Aviso no logout:', error);
       return null;
     }
   }
@@ -274,9 +276,9 @@ export const updateUserProfileAsync = createAsyncThunk(
  */
 export const uploadProfilePhotoAsync = createAsyncThunk(
   'auth/uploadProfilePhoto',
-  async (photo: File, { rejectWithValue }) => {
+  async ({ imageUri, fileName }: { imageUri: string; fileName?: string }, { rejectWithValue }) => {
     try {
-      const response = await authService.uploadProfilePhoto(photo);
+      const response = await authService.uploadProfilePhoto(imageUri, fileName);
       if (!response.sucesso) {
         return rejectWithValue(response.mensagem);
       }
@@ -473,6 +475,23 @@ const authSlice = createSlice({
       });
 
     // ============================================
+    // DEACTIVATE ACCOUNT
+    // ============================================
+    builder
+      .addCase(deactivateAccountAsync.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(deactivateAccountAsync.fulfilled, (state) => {
+        // Limpar todos os dados após desativação bem-sucedida
+        return initialState;
+      })
+      .addCase(deactivateAccountAsync.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // ============================================
     // UPDATE USER PROFILE
     // ============================================
     builder
@@ -500,7 +519,10 @@ const authSlice = createSlice({
       })
       .addCase(uploadProfilePhotoAsync.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload;
+        // Atualizar apenas a foto_perfil do usuário
+        if (state.user) {
+          state.user.foto_perfil = action.payload.foto_perfil;
+        }
         state.error = null;
       })
       .addCase(uploadProfilePhotoAsync.rejected, (state, action) => {

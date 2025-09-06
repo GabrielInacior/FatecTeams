@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
+    Alert,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigation } from '@react-navigation/native';
-import { AppDispatch, RootState } from '../../store';
-import { loginAsync, loginWithGoogleAsync, clearError } from '../../store/authSlice';
+import GoogleButton from '../../components/GoogleButton';
 import { useTheme } from '../../hooks/useTheme';
 import googleAuthService from '../../services/googleAuthService';
-import AuthLayout from './components/AuthLayout';
-import AuthInputField from './components/AuthInputField';
+import { AppDispatch, RootState } from '../../store';
+import { clearError, loginAsync, loginWithGoogleAsync } from '../../store/authSlice';
 import AuthButton from './components/AuthButton';
-import GoogleButton from '../../components/GoogleButton';
+import AuthInputField from './components/AuthInputField';
+import AuthLayout from './components/AuthLayout';
 
 interface LoginForm {
   email: string;
@@ -78,8 +78,27 @@ const LoginScreen: React.FC = () => {
         email: form.email.trim(),
         senha: form.senha,
       })).unwrap();
-    } catch (error) {
-      // Error já é tratado no useEffect
+    } catch (error: any) {
+      console.log('🔍 Erro no login:', error);
+      
+      // Verificar se é erro de conta desativada
+      if (typeof error === 'string') {
+        if (error.includes('Conta desativada') || error.includes('desativada')) {
+          navigation.navigate('AccountDeactivated', { email: form.email.trim() });
+          return;
+        }
+        
+        // Verificar se é erro relacionado a token (conta pode estar desativada)
+        if (error.includes('Refresh token não encontrado') || 
+            error.includes('Token inválido') ||
+            error.includes('não autorizado')) {
+          // Verificar se o usuário existe mas está desativado
+          navigation.navigate('AccountDeactivated', { email: form.email.trim() });
+          return;
+        }
+      }
+      
+      // Para outros erros, será tratado no useEffect
     }
   };
 

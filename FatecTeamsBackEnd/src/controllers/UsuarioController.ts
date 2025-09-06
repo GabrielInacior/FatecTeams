@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import { UsuarioEntity } from '../entities/UsuarioEntity';
-import { UsuarioRepository } from '../repositories/UsuarioRepository';
-import { AuthMiddleware } from '../middlewares/AuthMiddleware';
-import { AuthenticatedRequest, ApiResponse, CriarUsuarioRequest, LoginRequest } from '../types';
-import { S3Service } from '../services/S3Service';
 import multer from 'multer';
+import { UsuarioEntity } from '../entities/UsuarioEntity';
+import { AuthMiddleware } from '../middlewares/AuthMiddleware';
+import { UsuarioRepository } from '../repositories/UsuarioRepository';
+import { S3Service } from '../services/S3Service';
+import { ApiResponse, AuthenticatedRequest, CriarUsuarioRequest, LoginRequest } from '../types';
 
 // Configuração do multer para upload de fotos
 const upload = multer({
@@ -309,6 +309,13 @@ export class UsuarioController {
     // ============================================
     public uploadFotoPerfilUsuario = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
         try {
+            console.log('🔍 DEBUG - Upload foto de perfil:');
+            console.log('  req.user:', req.user);
+            console.log('  req.file:', req.file);
+            console.log('  req.files:', req.files);
+            console.log('  req.body:', req.body);
+            console.log('  Content-Type:', req.headers['content-type']);
+            
             if (!req.user) {
                 res.status(401).json({
                     sucesso: false,
@@ -319,6 +326,7 @@ export class UsuarioController {
             }
 
             if (!req.file) {
+                console.log('❌ Nenhum arquivo encontrado no req.file');
                 res.status(400).json({
                     sucesso: false,
                     mensagem: 'Nenhuma imagem foi enviada',

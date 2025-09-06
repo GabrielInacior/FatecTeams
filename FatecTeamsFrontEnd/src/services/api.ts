@@ -1,5 +1,5 @@
-import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { ApiResponse } from '../types';
@@ -112,6 +112,14 @@ class ApiService {
 
         // Se o erro é 401 (não autorizado) e não é uma tentativa de refresh
         if (error.response?.status === 401 && !originalRequest._retry) {
+          // Não tentar refresh token para rotas de autenticação
+          const authRoutes = ['/auth/login', '/auth/registro', '/auth/refresh', '/auth/reativar-conta'];
+          const isAuthRoute = authRoutes.some(route => originalRequest.url?.includes(route));
+          
+          if (isAuthRoute) {
+            return Promise.reject(error);
+          }
+          
           if (this.isRefreshing) {
             // Se já estiver fazendo refresh, aguardar
             return new Promise((resolve) => {
@@ -160,6 +168,8 @@ class ApiService {
       const refreshToken = await secureStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
       
       if (!refreshToken) {
+        // Limpar dados de autenticação se não há refresh token
+        await this.clearAuthData();
         throw new Error('Refresh token não encontrado');
       }
 
@@ -201,6 +211,12 @@ class ApiService {
         secureStorage.deleteItem(STORAGE_KEYS.REFRESH_TOKEN),
         AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA),
       ]);
+      
+      // Reset interceptor state
+      this.isRefreshing = false;
+      this.refreshSubscribers = [];
+      
+      console.log('🧹 Dados de autenticação limpos com sucesso');
     } catch (error) {
       console.error('Erro ao limpar dados de autenticação:', error);
     }
@@ -218,8 +234,32 @@ class ApiService {
 
   public async isAuthenticated(): Promise<boolean> {
     try {
-      const token = await secureStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-      return !!token;
+      const accessToken = await secureStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+      const refreshToken = await secureStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+      
+      // Se não tem tokens, não está autenticado
+      if (!accessToken || !refreshToken) {
+        return false;
+      }
+
+      // Verificar se o access token é válido fazendo uma requisição simples
+      try {
+        await this.get('/auth/validar');
+        return true;
+      } catch (error: any) {
+        // Se o token expirou, tentar renovar
+        if (error?.response?.status === 401) {
+          try {
+            await this.refreshAccessToken();
+            return true;
+          } catch (refreshError) {
+            // Se não conseguir renovar, não está autenticado
+            return false;
+          }
+        }
+        // Para outros erros, assumir que não está autenticado
+        return false;
+      }
     } catch (error) {
       return false;
     }

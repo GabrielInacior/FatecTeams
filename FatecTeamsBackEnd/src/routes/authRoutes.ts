@@ -40,6 +40,12 @@ router.post('/refresh',
     authController.renovarToken
 );
 
+// Reativar conta desativada
+router.post('/reativar-conta',
+    RateLimitMiddleware.login,
+    authController.reativarConta
+);
+
 // ============================================
 // ROTAS PROTEGIDAS - COM AUTENTICAÇÃO
 // ============================================

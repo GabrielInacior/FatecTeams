@@ -3,7 +3,7 @@ import { DatabaseConfig } from '../config/database';
 export interface IEvento {
     id?: string;
     grupo_id: string;
-    criador_id: string;  // Mudança de criado_por para criador_id para alinhar com migration
+    criado_por: string;  // Campo retornado nas consultas
     titulo: string;
     descricao?: string;
     data_inicio: Date;
@@ -16,6 +16,38 @@ export interface IEvento {
     configuracoes?: any;
     data_criacao?: Date;
     data_atualizacao?: Date;
+}
+
+export interface IEventoCreate {
+    id?: string;
+    grupo_id: string;
+    criado_por: string;  // Campo usado para criação no banco, mapeia para criador_id
+    titulo: string;
+    descricao?: string;
+    data_inicio: Date;
+    data_fim: Date;
+    local?: string;
+    link_virtual?: string;
+    tipo_evento: 'reuniao' | 'estudo' | 'prova' | 'apresentacao' | 'outro' | 'aula' | 'deadline';
+    status?: 'agendado' | 'em_andamento' | 'concluido' | 'cancelado';
+    recorrencia?: any;
+    configuracoes?: any;
+}
+
+export interface IEventoUpdate {
+    id?: string;
+    grupo_id?: string;
+    criado_por?: string;  // Campo para atualização no banco
+    titulo?: string;
+    descricao?: string;
+    data_inicio?: Date;
+    data_fim?: Date;
+    local?: string;
+    link_virtual?: string;
+    tipo_evento?: 'reuniao' | 'estudo' | 'prova' | 'apresentacao' | 'outro' | 'aula' | 'deadline';
+    status?: 'agendado' | 'em_andamento' | 'concluido' | 'cancelado';
+    recorrencia?: any;
+    configuracoes?: any;
 }
 
 export interface IEventoParticipante {
@@ -38,7 +70,7 @@ export class EventoRepository {
     // CRUD BÁSICO DE EVENTOS
     // ============================================
 
-    async criar(evento: IEvento): Promise<string> {
+    async criar(evento: IEventoCreate): Promise<string> {
         const query = `
             INSERT INTO eventos_calendario (
                 grupo_id, criador_id, titulo, descricao, data_inicio, data_fim, 
@@ -50,7 +82,7 @@ export class EventoRepository {
         
         const result = await this.db.query(query, [
             evento.grupo_id,
-            evento.criador_id,
+            evento.criado_por, // Mapeia criado_por para criador_id no banco
             evento.titulo,
             evento.descricao || null,
             evento.data_inicio,
@@ -82,7 +114,7 @@ export class EventoRepository {
         return {
             id: evento.id,
             grupo_id: evento.grupo_id,
-            criador_id: evento.criador_id,
+            criado_por: evento.criador_id, // Mapeamento: criador_id do banco para criado_por na resposta
             titulo: evento.titulo,
             descricao: evento.descricao,
             data_inicio: evento.data_inicio,
@@ -142,10 +174,14 @@ export class EventoRepository {
 
         const result = await this.db.query(query, params);
         
-        return result.rows.map((evento: any) => ({
+        console.log('🔍 EventoRepository.listarPorGrupo - Query executada:', query);
+        console.log('🔍 EventoRepository.listarPorGrupo - Parâmetros:', params);
+        console.log('🔍 EventoRepository.listarPorGrupo - Resultado do banco:', JSON.stringify(result.rows, null, 2));
+        
+        const eventosProcessados = result.rows.map((evento: any) => ({
             id: evento.id,
             grupo_id: evento.grupo_id,
-            criado_por: evento.criador_id,
+            criado_por: evento.criador_id, // Mapeamento: criador_id do banco para criado_por na resposta
             titulo: evento.titulo,
             descricao: evento.descricao,
             data_inicio: evento.data_inicio,
@@ -159,9 +195,13 @@ export class EventoRepository {
             criado_em: evento.data_criacao,
             atualizado_em: evento.data_atualizacao
         }));
+        
+        console.log('🔍 EventoRepository.listarPorGrupo - Eventos processados:', JSON.stringify(eventosProcessados, null, 2));
+        
+        return eventosProcessados;
     }
 
-    async atualizar(id: string, dados: Partial<IEvento>): Promise<boolean> {
+    async atualizar(id: string, dados: IEventoUpdate): Promise<boolean> {
         const campos = [];
         const valores = [];
         let paramCount = 0;
@@ -355,7 +395,7 @@ export class EventoRepository {
         return result.rows.map((evento: any) => ({
             id: evento.id,
             grupo_id: evento.grupo_id,
-            criado_por: evento.criador_id,
+            criador_id: evento.criador_id,
             titulo: evento.titulo,
             descricao: evento.descricao,
             data_inicio: evento.data_inicio,

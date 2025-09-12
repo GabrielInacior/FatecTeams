@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export interface IEventoCreate {
     grupo_id: string;
-    criador_id: string;
+    criado_por: string;
     titulo: string;
     descricao?: string;
     data_inicio: Date;
@@ -63,14 +63,14 @@ export class EventoEntity {
             }
 
             // Validar se criador é membro do grupo
-            const membro = await this.grupoRepository.verificarPermissao(dadosEvento.grupo_id, dadosEvento.criador_id);
+            const membro = await this.grupoRepository.verificarPermissao(dadosEvento.grupo_id, dadosEvento.criado_por);
             if (!membro) {
                 erros.push('Apenas membros do grupo podem criar eventos');
                 return { valido: false, erros };
             }
 
             // Validar se usuário existe
-            const usuario = await this.usuarioRepository.buscarPorId(dadosEvento.criador_id);
+            const usuario = await this.usuarioRepository.buscarPorId(dadosEvento.criado_por);
             if (!usuario) {
                 erros.push('Usuário criador não encontrado');
                 return { valido: false, erros };
@@ -96,7 +96,7 @@ export class EventoEntity {
             erros.push('ID do grupo é obrigatório');
         }
 
-        if ('criador_id' in dadosEvento && !dadosEvento.criador_id?.trim()) {
+        if ('criado_por' in dadosEvento && !dadosEvento.criado_por?.trim()) {
             erros.push('ID do criador é obrigatório');
         }
 
@@ -178,7 +178,7 @@ export class EventoEntity {
             const evento: IEvento = {
                 id: uuidv4(),
                 grupo_id: dadosEvento.grupo_id,
-                criador_id: dadosEvento.criador_id,
+                criado_por: dadosEvento.criado_por,
                 titulo: dadosEvento.titulo,
                 descricao: dadosEvento.descricao,
                 data_inicio: dadosEvento.data_inicio,
@@ -199,7 +199,7 @@ export class EventoEntity {
             if (eventoCriado) {
                 await this.eventoRepository.adicionarParticipante({
                     evento_id: eventoId,
-                    usuario_id: dadosEvento.criador_id,
+                    usuario_id: dadosEvento.criado_por,
                     status: 'confirmado'
                 });
             }
@@ -465,7 +465,7 @@ export class EventoEntity {
             }
 
             // Verificar se usuário é o criador ou tem permissão
-            if (evento.criador_id !== usuarioId) {
+            if (evento.criado_por !== usuarioId) {
                 const membro = await this.grupoRepository.verificarPermissao(evento.grupo_id, usuarioId);
                 if (!membro || membro.nivel_permissao !== 'admin') {
                     return {

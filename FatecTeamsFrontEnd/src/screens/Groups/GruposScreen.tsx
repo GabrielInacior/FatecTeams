@@ -2,14 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-    Alert,
-    FlatList,
-    RefreshControl,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,13 +20,13 @@ import Header from '../../components/common/Header';
 import { useTheme } from '../../hooks/useTheme';
 import { AppDispatch, RootState } from '../../store';
 import {
-    clearFiltros,
-    createGrupo,
-    deleteGrupo,
-    fetchGrupos,
-    setFiltros,
-    setSearchTerm,
-    updateGrupoAsync
+  clearFiltros,
+  createGrupo,
+  deleteGrupo,
+  fetchGrupos,
+  setFiltros,
+  setSearchTerm,
+  updateGrupoAsync
 } from '../../store/gruposSlice';
 import CreateEditGrupoModal from './components/CreateEditGrupoModal';
 import FiltrosGrupos from './components/FiltrosGrupos';
@@ -56,8 +56,11 @@ const GruposScreen: React.FC = () => {
   // Carregar grupos ao focar na tela
   useFocusEffect(
     useCallback(() => {
-      dispatch(fetchGrupos({}));
-    }, [dispatch])
+      // Só recarregar se não estiver criando um grupo
+      if (!isCreatingGroup) {
+        dispatch(fetchGrupos({}));
+      }
+    }, [dispatch, isCreatingGroup])
   );
 
   // Filtrar grupos baseado nos filtros ativos e busca
@@ -133,23 +136,50 @@ const GruposScreen: React.FC = () => {
   };
 
   const handleSaveGrupo = async (data: any) => {
+    console.log('🔄 handleSaveGrupo called with:', data);
+    
+    // Evitar chamadas duplas
+    if (isCreatingGroup) {
+      console.log('⚠️ Already creating group, ignoring call');
+      return;
+    }
+
     try {
+      console.log('📤 Starting group creation...');
       setIsCreatingGroup(true);
       
       if (editingGrupo) {
+        console.log('✏️ Updating existing group:', editingGrupo.id);
         await dispatch(updateGrupoAsync({ 
           grupoId: editingGrupo.id, 
           data 
         })).unwrap();
       } else {
+        console.log('➕ Creating new group...');
         await dispatch(createGrupo(data)).unwrap();
       }
       
+      console.log('✅ Group saved successfully');
+      // Só fechar modal após sucesso
       setShowCreateEdit(false);
       setEditingGrupo(null);
     } catch (error: any) {
-      Alert.alert('Erro', error.message || 'Erro ao salvar grupo');
+      console.log('❌ Error saving group:', error);
+      console.log('❌ Error details:', JSON.stringify(error, null, 2));
+      
+      // Extrair mensagem de erro mais específica
+      let errorMessage = 'Erro ao salvar grupo';
+      if (error?.response?.data?.erros?.length > 0) {
+        errorMessage = error.response.data.erros.join('\n');
+      } else if (error?.response?.data?.mensagem) {
+        errorMessage = error.response.data.mensagem;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('Erro', errorMessage);
     } finally {
+      console.log('🏁 Finished group creation process');
       setIsCreatingGroup(false);
     }
   };
@@ -248,12 +278,21 @@ const GruposScreen: React.FC = () => {
           title="Grupos"
           subtitle={`${gruposFiltrados.length} ${gruposFiltrados.length === 1 ? 'grupo' : 'grupos'}`}
           rightElement={
-            <TouchableOpacity
-              style={[styles.createButton, { backgroundColor: theme.colors.primary }]}
-              onPress={handleCreateGrupo}
-            >
-              <Ionicons name="add" size={24} color={theme.colors.white} />
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={[styles.chatButton, { backgroundColor: theme.colors.card }]}
+                onPress={() => navigation.navigate('ChatGroupList')}
+              >
+                <Ionicons name="chatbubbles-outline" size={20} color={theme.colors.primary} />
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.createButton, { backgroundColor: theme.colors.primary }]}
+                onPress={handleCreateGrupo}
+              >
+                <Ionicons name="add" size={24} color={theme.colors.white} />
+              </TouchableOpacity>
+            </View>
           }
         />
       </FadeInView>
@@ -455,6 +494,23 @@ const styles = StyleSheet.create({
   emptyButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  chatButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
 });
 

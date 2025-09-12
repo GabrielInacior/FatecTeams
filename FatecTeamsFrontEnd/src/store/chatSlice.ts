@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import mensagensService from '../services/mensagensService';
 
 // ============================================
@@ -9,10 +9,13 @@ interface Mensagem {
   id: string;
   conteudo: string;
   tipo_mensagem: 'texto' | 'arquivo' | 'imagem';
-  autor_id: string;
+  autor_id?: string;        // Para compatibilidade com frontend
+  remetente_id?: string;    // Campo real do backend
   grupo_id: string;
-  data_criacao: string;
+  data_criacao?: string;    // Para compatibilidade com frontend
+  data_envio?: string;      // Campo real do backend
   data_atualizacao?: string;
+  data_edicao?: string;     // Campo real do backend
   arquivo_id?: string;
   mensagem_pai_id?: string;
   mencionados?: string[];
@@ -23,6 +26,9 @@ interface Mensagem {
     email: string;
     foto_perfil?: string;
   };
+  // Campos adicionais do backend
+  remetente_nome?: string;
+  remetente_foto?: string;
 }
 
 interface Reacao {
@@ -49,6 +55,7 @@ interface ChatState {
   unreadCounts: { [grupoId: string]: number };
   mensagensRecentes: { [grupoId: string]: Mensagem[] };
   estatisticas: { [grupoId: string]: any };
+  currentUserId: string | null; // Para evitar duplicação e marcar mensagens próprias
 }
 
 interface CreateMensagemData {
@@ -73,6 +80,32 @@ interface BuscarMensagensParams {
 }
 
 // ============================================
+// FUNÇÕES HELPER
+// ============================================
+
+// Função para obter ID do autor da mensagem
+const getAuthorId = (mensagem: Mensagem): string => {
+  return mensagem.autor_id || mensagem.remetente_id || '';
+};
+
+// Função para normalizar mensagem (mapear campos do backend para frontend)
+const normalizeMensagem = (mensagem: any): Mensagem => {
+  return {
+    ...mensagem,
+    autor_id: mensagem.autor_id || mensagem.remetente_id,
+    data_criacao: mensagem.data_criacao || mensagem.data_envio,
+    data_atualizacao: mensagem.data_atualizacao || mensagem.data_edicao,
+    // Construir objeto autor se não existir
+    autor: mensagem.autor || (mensagem.remetente_nome ? {
+      id: mensagem.remetente_id || '',
+      nome: mensagem.remetente_nome,
+      email: '',
+      foto_perfil: mensagem.remetente_foto
+    } : undefined)
+  };
+};
+
+// ============================================
 // INITIAL STATE
 // ============================================
 
@@ -87,6 +120,7 @@ const initialState: ChatState = {
   unreadCounts: {},
   mensagensRecentes: {},
   estatisticas: {},
+  currentUserId: null,
 };
 
 // ============================================
@@ -340,19 +374,34 @@ const chatSlice = createSlice({
   name: 'chat',
   initialState,
   reducers: {
+    // Definir usuário atual
+    setCurrentUserId: (state, action: PayloadAction<string | null>) => {
+      state.currentUserId = action.payload;
+    },
+    
     // Receber mensagem em tempo real (WebSocket)
     receiveMessage: (state, action: PayloadAction<{ grupoId: string; mensagem: Mensagem }>) => {
       const { grupoId, mensagem } = action.payload;
       if (!state.mensagens[grupoId]) {
         state.mensagens[grupoId] = [];
       }
-      state.mensagens[grupoId].push(mensagem);
       
-      // Incrementar contador de não lidas
-      if (!state.unreadCounts[grupoId]) {
-        state.unreadCounts[grupoId] = 0;
+      const normalizedMensagem = normalizeMensagem(mensagem);
+      
+      // Verificar se a mensagem já existe para evitar duplicatas
+      const mensagemExiste = state.mensagens[grupoId].some(m => m.id === normalizedMensagem.id);
+      if (!mensagemExiste) {
+        state.mensagens[grupoId].push(normalizedMensagem);
+        
+        // Incrementar contador de não lidas apenas se não for do usuário atual
+        const isOwnMessage = getAuthorId(normalizedMensagem) === state.currentUserId;
+        if (!isOwnMessage) {
+          if (!state.unreadCounts[grupoId]) {
+            state.unreadCounts[grupoId] = 0;
+          }
+          state.unreadCounts[grupoId]++;
+        }
       }
-      state.unreadCounts[grupoId]++;
     },
     
     // Marcar mensagens como lidas
@@ -383,6 +432,64 @@ const chatSlice = createSlice({
       state.searchResults = [];
       state.isSearching = false;
     },
+
+    // ============================================
+    // AÇÕES WEBSOCKET
+    // ============================================
+
+    // Adicionar mensagem via WebSocket
+    addMensagemWebSocket: (state, action: PayloadAction<{ grupoId: string; mensagem: Mensagem }>) => {
+      const { grupoId, mensagem } = action.payload;
+      if (!state.mensagens[grupoId]) {
+        state.mensagens[grupoId] = [];
+      }
+      
+      const normalizedMensagem = normalizeMensagem(mensagem);
+      
+      // Verificar se a mensagem já existe para evitar duplicatas
+      const mensagemExiste = state.mensagens[grupoId].some(m => m.id === normalizedMensagem.id);
+      if (!mensagemExiste) {
+        state.mensagens[grupoId].push(normalizedMensagem);
+        
+        // Incrementar contador de não lidas se não for do usuário atual
+        const isOwnMessage = getAuthorId(normalizedMensagem) === state.currentUserId;
+        if (!isOwnMessage) {
+          if (!state.unreadCounts[grupoId]) {
+            state.unreadCounts[grupoId] = 0;
+          }
+          state.unreadCounts[grupoId]++;
+        }
+      }
+    },
+
+    // Atualizar mensagem via WebSocket
+    updateMensagemWebSocket: (state, action: PayloadAction<{ mensagemId: string; conteudo: string; data_atualizacao: string }>) => {
+      const { mensagemId, conteudo, data_atualizacao } = action.payload;
+      
+      // Procurar e atualizar a mensagem em todos os grupos
+      Object.keys(state.mensagens).forEach(grupoId => {
+        const mensagens = state.mensagens[grupoId];
+        const mensagemIndex = mensagens.findIndex(m => m.id === mensagemId);
+        
+        if (mensagemIndex !== -1) {
+          mensagens[mensagemIndex] = {
+            ...mensagens[mensagemIndex],
+            conteudo,
+            data_atualizacao,
+            editado: true
+          };
+        }
+      });
+    },
+
+    // Remover mensagem via WebSocket
+    removeMensagemWebSocket: (state, action: PayloadAction<{ grupoId: string; mensagemId: string }>) => {
+      const { grupoId, mensagemId } = action.payload;
+      
+      if (state.mensagens[grupoId]) {
+        state.mensagens[grupoId] = state.mensagens[grupoId].filter(m => m.id !== mensagemId);
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -401,8 +508,16 @@ const chatSlice = createSlice({
           state.mensagens[grupoId] = [];
         }
         
-        // Adicionar mensagens ao início (histórico)
-        state.mensagens[grupoId] = [...mensagens, ...(state.mensagens[grupoId] || [])];
+        // Normalizar mensagens recebidas
+        const mensagensNormalizadas = mensagens.map(normalizeMensagem);
+        
+        // Adicionar mensagens ao início (histórico), evitando duplicatas
+        const mensagensExistentes = state.mensagens[grupoId];
+        const novasMensagens = mensagensNormalizadas.filter(nova => 
+          !mensagensExistentes.some(existente => existente.id === nova.id)
+        );
+        
+        state.mensagens[grupoId] = [...novasMensagens, ...mensagensExistentes];
       })
       .addCase(fetchMensagens.rejected, (state, action) => {
         state.isLoading = false;
@@ -424,7 +539,12 @@ const chatSlice = createSlice({
           state.mensagens[grupoId] = [];
         }
         if (mensagem) {
-          state.mensagens[grupoId].push(mensagem);
+          const normalizedMensagem = normalizeMensagem(mensagem);
+          // Verificar se a mensagem já existe para evitar duplicatas
+          const mensagemExiste = state.mensagens[grupoId].some(m => m.id === normalizedMensagem.id);
+          if (!mensagemExiste) {
+            state.mensagens[grupoId].push(normalizedMensagem);
+          }
         }
       })
       .addCase(createMensagem.rejected, (state, action) => {
@@ -439,11 +559,12 @@ const chatSlice = createSlice({
         const mensagem = action.payload;
         // Adicionar ou atualizar mensagem no cache se necessário
         if (mensagem && mensagem.grupo_id && state.mensagens[mensagem.grupo_id]) {
-          const index = state.mensagens[mensagem.grupo_id].findIndex(m => m.id === mensagem.id);
+          const normalizedMensagem = normalizeMensagem(mensagem);
+          const index = state.mensagens[mensagem.grupo_id].findIndex(m => m.id === normalizedMensagem.id);
           if (index === -1) {
-            state.mensagens[mensagem.grupo_id].push(mensagem);
+            state.mensagens[mensagem.grupo_id].push(normalizedMensagem);
           } else {
-            state.mensagens[mensagem.grupo_id][index] = mensagem;
+            state.mensagens[mensagem.grupo_id][index] = normalizedMensagem;
           }
         }
       })
@@ -456,9 +577,10 @@ const chatSlice = createSlice({
         
         // Encontrar e atualizar a mensagem
         if (mensagemEditada && mensagemEditada.grupo_id && state.mensagens[mensagemEditada.grupo_id]) {
-          const index = state.mensagens[mensagemEditada.grupo_id].findIndex(m => m.id === mensagemEditada.id);
+          const normalizedMensagem = normalizeMensagem(mensagemEditada);
+          const index = state.mensagens[mensagemEditada.grupo_id].findIndex(m => m.id === normalizedMensagem.id);
           if (index !== -1) {
-            state.mensagens[mensagemEditada.grupo_id][index] = mensagemEditada;
+            state.mensagens[mensagemEditada.grupo_id][index] = normalizedMensagem;
           }
         }
         
@@ -562,6 +684,10 @@ export const {
   clearError,
   setMensagemAtiva,
   clearSearchResults,
+  setCurrentUserId,
+  addMensagemWebSocket,
+  updateMensagemWebSocket,
+  removeMensagemWebSocket,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

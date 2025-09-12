@@ -1,8 +1,8 @@
-import { Request, Response } from 'express';
-import { AuthenticatedRequest } from '../types';
+import { Response } from 'express';
+import { EventoRepository } from '../repositories/EventoRepository';
 import { GrupoRepository } from '../repositories/GrupoRepository';
 import { UsuarioRepository } from '../repositories/UsuarioRepository';
-import { EventoRepository } from '../repositories/EventoRepository';
+import { AuthenticatedRequest } from '../types';
 
 export class EventoController {
     private grupoRepository: GrupoRepository;
@@ -58,7 +58,7 @@ export class EventoController {
             // Criar evento
             const eventoId = await this.eventoRepository.criar({
                 grupo_id,
-                criador_id: usuarioId,
+                criado_por: usuarioId,
                 titulo,
                 descricao: descricao || null,
                 data_inicio: new Date(data_inicio),
@@ -75,9 +75,14 @@ export class EventoController {
                 mensagem: 'Evento criado com sucesso',
                 evento
             });
-        } catch (error) {
-            console.error('Erro ao criar evento:', error);
-            res.status(500).json({ erro: 'Erro interno do servidor' });
+        } catch (error: any) {
+            console.error('Erro detalhado ao criar evento:', error);
+            console.error('Stack trace:', error?.stack);
+            console.error('Dados do request:', req.body);
+            res.status(500).json({ 
+                erro: 'Erro interno do servidor', 
+                detalhes: error?.message || String(error)
+            });
         }
     }
 
@@ -99,6 +104,9 @@ export class EventoController {
             }
 
             const eventos = await this.eventoRepository.listarPorGrupo(grupoId);
+            console.log('🔍 EventoController - Eventos retornados do repository:', JSON.stringify(eventos, null, 2));
+            console.log('🔍 EventoController - Primeiro evento:', eventos[0]);
+            console.log('🔍 EventoController - Campos do primeiro evento:', eventos[0] ? Object.keys(eventos[0]) : 'Nenhum evento');
 
             res.status(200).json({ eventos });
         } catch (error) {
@@ -109,7 +117,7 @@ export class EventoController {
 
     async obterEvento(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
-            const { eventoId } = req.params;
+            const { id: eventoId } = req.params;
             const usuarioId = req.user?.id;
 
             if (!usuarioId) {
@@ -145,7 +153,7 @@ export class EventoController {
 
     async atualizarEvento(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
-            const { eventoId } = req.params;
+            const { id: eventoId } = req.params;
             const usuarioId = req.user?.id;
 
             if (!usuarioId) {
@@ -161,7 +169,7 @@ export class EventoController {
 
             // Verificar permissão (criador ou admin/moderador do grupo)
             const membro = await this.grupoRepository.verificarPermissao(evento.grupo_id, usuarioId);
-            const podeEditar = evento.criador_id === usuarioId ||
+            const podeEditar = evento.criado_por === usuarioId ||
                              (membro && (membro.nivel_permissao === 'admin' || membro.nivel_permissao === 'moderador'));
 
             if (!podeEditar) {
@@ -184,7 +192,7 @@ export class EventoController {
 
     async adicionarParticipante(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
-            const { eventoId } = req.params;
+            const { id: eventoId } = req.params;
             const { usuario_id } = req.body;
             const usuarioId = req.user?.id;
 
@@ -206,7 +214,7 @@ export class EventoController {
 
             // Verificar permissão
             const membro = await this.grupoRepository.verificarPermissao(evento.grupo_id, usuarioId);
-            const podeAdicionar = evento.criador_id === usuarioId ||
+            const podeAdicionar = evento.criado_por === usuarioId ||
                                  (membro && (membro.nivel_permissao === 'admin' || membro.nivel_permissao === 'moderador'));
 
             if (!podeAdicionar) {
@@ -243,6 +251,43 @@ export class EventoController {
             res.status(200).json({ eventos });
         } catch (error) {
             console.error('Erro ao buscar meus eventos:', error);
+            res.status(500).json({ erro: 'Erro interno do servidor' });
+        }
+    }
+
+    async deletarEvento(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const { id: eventoId } = req.params;
+            const usuarioId = req.user?.id;
+
+            if (!usuarioId) {
+                res.status(401).json({ erro: 'Token inválido' });
+                return;
+            }
+
+            const evento = await this.eventoRepository.buscarPorId(eventoId);
+            if (!evento) {
+                res.status(404).json({ erro: 'Evento não encontrado' });
+                return;
+            }
+
+            // Verificar permissão (criador ou admin/moderador do grupo)
+            const membro = await this.grupoRepository.verificarPermissao(evento.grupo_id, usuarioId);
+            const podeExcluir = evento.criado_por === usuarioId ||
+                             (membro && (membro.nivel_permissao === 'admin' || membro.nivel_permissao === 'moderador'));
+
+            if (!podeExcluir) {
+                res.status(403).json({ erro: 'Sem permissão para excluir este evento' });
+                return;
+            }
+
+            await this.eventoRepository.deletar(eventoId);
+
+            res.status(200).json({
+                mensagem: 'Evento excluído com sucesso'
+            });
+        } catch (error) {
+            console.error('Erro ao excluir evento:', error);
             res.status(500).json({ erro: 'Erro interno do servidor' });
         }
     }

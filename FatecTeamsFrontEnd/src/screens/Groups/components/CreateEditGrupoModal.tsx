@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Modal,
     ScrollView,
@@ -54,6 +54,21 @@ const CreateEditGrupoModal: React.FC<CreateEditGrupoModalProps> = ({
 
   const [errors, setErrors] = useState<{[key: string]: string}>({});
 
+  // Reset form when modal opens/closes or editData changes
+  useEffect(() => {
+    if (visible) {
+      setFormData({
+        nome: editData?.nome || '',
+        descricao: editData?.descricao || '',
+        tipo: editData?.tipo || 'projeto',
+        privacidade: editData?.privacidade || 'publico',
+        max_membros: editData?.max_membros || undefined,
+        hasMaxMembers: !!editData?.max_membros,
+      });
+      setErrors({});
+    }
+  }, [visible, editData]);
+
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
 
@@ -82,7 +97,16 @@ const CreateEditGrupoModal: React.FC<CreateEditGrupoModalProps> = ({
   };
 
   const handleSave = () => {
+    console.log('🔘 Modal handleSave called, isLoading:', isLoading);
+    
+    // Evitar múltiplos cliques
+    if (isLoading) {
+      console.log('⚠️ Modal already loading, ignoring click');
+      return;
+    }
+
     if (!validateForm()) {
+      console.log('❌ Form validation failed');
       return;
     }
 
@@ -94,6 +118,7 @@ const CreateEditGrupoModal: React.FC<CreateEditGrupoModalProps> = ({
       max_membros: formData.hasMaxMembers ? formData.max_membros : undefined,
     };
 
+    console.log('📨 Modal calling onSave with:', dataToSave);
     onSave(dataToSave);
   };
 

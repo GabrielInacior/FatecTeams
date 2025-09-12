@@ -15,7 +15,7 @@ export class GrupoController {
 
     public criar = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
         try {
-            const { nome, descricao, tipo_grupo, tipo, configuracoes } = req.body;
+            const { nome, descricao, tipo, privacidade, max_membros, configuracoes } = req.body;
             const userId = req.user?.id;
 
             if (!userId) {
@@ -30,7 +30,9 @@ export class GrupoController {
             const dadosGrupo: IGrupoCreate = {
                 nome,
                 descricao,
-                tipo: tipo_grupo || tipo, // Aceitar tanto tipo_grupo quanto tipo
+                categoria: tipo, // Mapear 'tipo' do frontend para 'categoria'
+                privacidade,
+                max_membros,
                 configuracoes,
                 criador_id: userId
             };
@@ -99,12 +101,14 @@ export class GrupoController {
     public atualizar = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
-            const { nome, descricao, tipo, configuracoes } = req.body;
+            const { nome, descricao, tipo, privacidade, max_membros, configuracoes } = req.body;
 
             const dadosAtualizacao: IGrupoUpdate = {
                 nome,
                 descricao,
-                tipo,
+                categoria: tipo,
+                privacidade,
+                max_membros,
                 configuracoes
             };
 

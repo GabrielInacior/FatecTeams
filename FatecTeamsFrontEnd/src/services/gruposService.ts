@@ -1,5 +1,5 @@
+import { ApiResponse } from '../types';
 import apiService from './api';
-import { ApiResponse, PaginatedResponse } from '../types';
 
 // ============================================
 // INTERFACES ESPECÍFICAS PARA GRUPOS
@@ -57,6 +57,28 @@ interface BuscarGruposParams {
 
 class GruposService {
   // ============================================
+  // MÉTODOS AUXILIARES
+  // ============================================
+
+  /**
+   * Mapear dados do backend para o frontend
+   * Converte 'categoria' para 'tipo' para manter compatibilidade
+   */
+  private mapGrupoData(grupo: any): Grupo {
+    return {
+      ...grupo,
+      tipo: grupo.categoria || grupo.tipo, // Usar categoria se disponível, senão usar tipo
+    };
+  }
+
+  /**
+   * Mapear array de grupos
+   */
+  private mapGruposArray(grupos: any[]): Grupo[] {
+    return grupos.map(grupo => this.mapGrupoData(grupo));
+  }
+
+  // ============================================
   // CRUD BÁSICO DE GRUPOS
   // ============================================
 
@@ -65,7 +87,11 @@ class GruposService {
    */
   async createGrupo(grupoData: CreateGrupoData): Promise<ApiResponse<Grupo>> {
     try {
-      return await apiService.post<ApiResponse<Grupo>>('/grupos', grupoData);
+      const response = await apiService.post<ApiResponse<any>>('/grupos', grupoData);
+      return {
+        ...response,
+        dados: response.dados ? this.mapGrupoData(response.dados) : undefined
+      };
     } catch (error) {
       throw new Error(apiService.handleError(error));
     }
@@ -76,7 +102,11 @@ class GruposService {
    */
   async getGrupo(grupoId: string): Promise<ApiResponse<Grupo>> {
     try {
-      return await apiService.get<ApiResponse<Grupo>>(`/grupos/${grupoId}`);
+      const response = await apiService.get<ApiResponse<any>>(`/grupos/${grupoId}`);
+      return {
+        ...response,
+        dados: response.dados ? this.mapGrupoData(response.dados) : undefined
+      };
     } catch (error) {
       throw new Error(apiService.handleError(error));
     }
@@ -122,7 +152,11 @@ class GruposService {
     try {
       const queryString = params ? new URLSearchParams(params as any).toString() : '';
       const url = queryString ? `/grupos?${queryString}` : '/grupos';
-      return await apiService.get<ApiResponse<Grupo[]>>(url);
+      const response = await apiService.get<ApiResponse<any[]>>(url);
+      return {
+        ...response,
+        dados: response.dados ? this.mapGruposArray(response.dados) : []
+      };
     } catch (error) {
       throw new Error(apiService.handleError(error));
     }
@@ -134,7 +168,11 @@ class GruposService {
   async buscarGruposPublicos(params: BuscarGruposParams): Promise<ApiResponse<Grupo[]>> {
     try {
       const queryString = new URLSearchParams(params as any).toString();
-      return await apiService.get<ApiResponse<Grupo[]>>(`/grupos/publicos/buscar?${queryString}`);
+      const response = await apiService.get<ApiResponse<any[]>>(`/grupos/publicos/buscar?${queryString}`);
+      return {
+        ...response,
+        dados: response.dados ? this.mapGruposArray(response.dados) : []
+      };
     } catch (error) {
       throw new Error(apiService.handleError(error));
     }

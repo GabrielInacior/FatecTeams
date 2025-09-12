@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { MensagemEntity, IMensagemCreate, IMensagemUpdate } from '../entities/MensagemEntity';
-import { AuthenticatedRequest } from '../types';
+import { IMensagemCreate, MensagemEntity } from '../entities/MensagemEntity';
 import { WebSocketService } from '../services/WebSocketService';
+import { AuthenticatedRequest } from '../types';
 
 export class MensagemController {
     private mensagemEntity: MensagemEntity;
@@ -18,7 +18,8 @@ export class MensagemController {
 
     public criar = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
         try {
-            const { conteudo, tipo_mensagem, arquivo_id, grupo_id, mensagem_pai_id, mencionados } = req.body;
+            const { conteudo, tipo_mensagem, arquivo_id, mensagem_pai_id, mencionados } = req.body;
+            const { grupoId } = req.params;
             const userId = req.user?.id;
 
             if (!userId) {
@@ -34,7 +35,7 @@ export class MensagemController {
                 conteudo,
                 tipo_mensagem: tipo_mensagem || 'texto',
                 arquivo_id,
-                grupo_id,
+                grupo_id: grupoId,
                 remetente_id: userId,
                 mensagem_pai_id,
                 mencionados
@@ -54,7 +55,7 @@ export class MensagemController {
 
             // Emitir nova mensagem via WebSocket
             if (resultado.mensagem) {
-                this.webSocketService.emitirNovaMensagem(grupo_id, {
+                this.webSocketService.emitirNovaMensagem(grupoId, {
                     ...resultado.mensagem,
                     remetente_nome: req.user?.nome || 'Usuário'
                 });

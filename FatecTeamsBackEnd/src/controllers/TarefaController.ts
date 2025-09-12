@@ -37,7 +37,7 @@ export class TarefaController {
                 prioridade,
                 data_vencimento: data_vencimento ? new Date(data_vencimento) : undefined,
                 grupo_id,
-                criado_por: userId,
+                criador_id: userId,
                 assignado_para: assignado_para || userId,
                 etiquetas,
                 estimativa_horas,
@@ -208,11 +208,12 @@ export class TarefaController {
             const { grupoId } = req.params;
             const { status, prioridade, assignado_para, vencimento, limite, offset } = req.query;
 
+            // Filtrar valores undefined/null
             const filtros = {
-                status: status as string,
-                prioridade: prioridade as string,
-                assignado_para: assignado_para as string,
-                vencimento: vencimento as 'vencidas' | 'hoje' | 'semana' | 'mes'
+                status: status && status !== 'undefined' ? status as string : undefined,
+                prioridade: prioridade && prioridade !== 'undefined' ? prioridade as string : undefined,
+                assignado_para: assignado_para && assignado_para !== 'undefined' ? assignado_para as string : undefined,
+                vencimento: vencimento && vencimento !== 'undefined' ? vencimento as 'vencidas' | 'hoje' | 'semana' | 'mes' : undefined
             };
 
             const resultado = await this.tarefaEntity.listarPorGrupo(

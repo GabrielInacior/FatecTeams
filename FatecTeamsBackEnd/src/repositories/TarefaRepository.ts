@@ -152,7 +152,7 @@ export class TarefaRepository {
                    ua.foto_perfil as assignado_avatar,
                    (SELECT COUNT(*) FROM comentarios_tarefas WHERE tarefa_id = t.id) as total_comentarios
             FROM tarefas t
-            LEFT JOIN usuarios uc ON t.criado_por = uc.id
+            LEFT JOIN usuarios uc ON t.criador_id = uc.id
             LEFT JOIN usuarios ua ON t.assignado_para = ua.id
             WHERE ${whereConditions.join(' AND ')}
             ORDER BY 
@@ -322,7 +322,7 @@ export class TarefaRepository {
                    ts_headline('portuguese', t.titulo || ' ' || COALESCE(t.descricao, ''), 
                               to_tsquery('portuguese', $2), 'MaxWords=10') as titulo_destacado
             FROM tarefas t
-            LEFT JOIN usuarios uc ON t.criado_por = uc.id
+            LEFT JOIN usuarios uc ON t.criador_id = uc.id
             LEFT JOIN usuarios ua ON t.assignado_para = ua.id
             WHERE t.grupo_id = $1 
               AND t.deletado_em IS NULL
@@ -413,11 +413,13 @@ export class TarefaRepository {
     }
 
     async registrarMudancaStatus(tarefaId: string, usuarioId: string, statusAnterior: string, statusNovo: string): Promise<void> {
-        const query = `
-            INSERT INTO historico_tarefas (tarefa_id, usuario_id, status_anterior, status_novo)
-            VALUES ($1, $2, $3, $4)
-        `;
-        
-        await this.db.query(query, [tarefaId, usuarioId, statusAnterior, statusNovo]);
+        // TODO: Implementar tabela historico_tarefas
+        // const query = `
+        //     INSERT INTO historico_tarefas (tarefa_id, usuario_id, status_anterior, status_novo)
+        //     VALUES ($1, $2, $3, $4)
+        // `;
+        // 
+        // await this.db.query(query, [tarefaId, usuarioId, statusAnterior, statusNovo]);
+        console.log(`Status da tarefa ${tarefaId} alterado de ${statusAnterior} para ${statusNovo} por ${usuarioId}`);
     }
 }

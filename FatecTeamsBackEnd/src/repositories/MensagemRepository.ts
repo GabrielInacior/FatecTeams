@@ -28,6 +28,25 @@ export class MensagemRepository {
         this.db = DatabaseConfig.getInstance();
     }
 
+    private parseJsonSafely(jsonString: string | null | undefined, defaultValue: any = null): any {
+        // Handle null, undefined, or non-string values
+        if (jsonString === null || jsonString === undefined || typeof jsonString !== 'string') {
+            return defaultValue;
+        }
+        
+        // Handle empty strings
+        if (jsonString.trim() === '') {
+            return defaultValue;
+        }
+        
+        try {
+            return JSON.parse(jsonString);
+        } catch (error) {
+            console.warn('Erro ao fazer parse de JSON:', jsonString, error);
+            return defaultValue;
+        }
+    }
+
     // ============================================
     // CRUD BÁSICO DE MENSAGENS
     // ============================================
@@ -85,7 +104,7 @@ export class MensagemRepository {
             grupo_id: row.grupo_id,
             remetente_id: row.remetente_id,
             mensagem_pai_id: row.mensagem_pai_id,
-            mencionados: JSON.parse(row.mencionados || '[]'),
+            mencionados: this.parseJsonSafely(row.mencionados, []),
             editado: row.editado,
             data_envio: row.data_envio,
             data_edicao: row.data_edicao

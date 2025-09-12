@@ -31,6 +31,33 @@ export type GruposStackParamList = {
     grupoId: string;
     grupo: any;
   };
+  GrupoEventos: {
+    grupoId: string;
+    grupo: any;
+  };
+  GrupoTarefas: {
+    grupoId: string;
+    grupo: any;
+  };
+  CreateEvento: {
+    grupoId: string;
+    grupo: any;
+    eventoId?: string;
+  };
+  CreateTarefa: {
+    grupoId: string;
+    grupo: any;
+  };
+  EditEvento: {
+    eventoId: string;
+    evento: any;
+    grupoId: string;
+  };
+  ChatGroupList: undefined;
+  GrupoChat: {
+    grupoId: string;
+    grupo: any;
+  };
 };
 
 export type AppTabParamList = {

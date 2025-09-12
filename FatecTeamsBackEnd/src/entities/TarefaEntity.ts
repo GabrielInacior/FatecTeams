@@ -8,7 +8,7 @@ export interface ITarefaCreate {
     prioridade: 'baixa' | 'media' | 'alta' | 'urgente';
     data_vencimento?: Date;
     grupo_id: string;
-    criado_por: string;
+    criador_id: string;
     assignado_para?: string;
     etiquetas?: string[];
     estimativa_horas?: number;
@@ -161,7 +161,7 @@ export class TarefaEntity {
                 ...dadosTarefa,
                 status: dadosTarefa.status || 'pendente',
                 data_criacao: new Date(),
-                criador_id: dadosTarefa.criado_por
+                criador_id: dadosTarefa.criador_id
             };
 
             this.preRules();
@@ -176,8 +176,8 @@ export class TarefaEntity {
 
             const tarefaId = await this.tarefaRepository.criar(this.dados);
             
-            // Registrar no histórico
-            await this.tarefaRepository.registrarMudancaStatus(tarefaId, this.dados.criador_id, 'nova', this.dados.status);
+            // TODO: Registrar no histórico quando tabela historico_tarefas for criada
+            // await this.tarefaRepository.registrarMudancaStatus(tarefaId, this.dados.criador_id, 'nova', this.dados.status);
             
             const tarefaSalva = await this.tarefaRepository.buscarPorId(tarefaId);
 
@@ -233,10 +233,10 @@ export class TarefaEntity {
                 };
             }
 
-            // Registrar mudança de status se houve alteração
-            if (dadosAtualizacao.status && dadosAtualizacao.status !== statusAnterior) {
-                await this.tarefaRepository.registrarMudancaStatus(id, usuarioId, statusAnterior, dadosAtualizacao.status);
-            }
+            // TODO: Registrar mudança de status quando tabela historico_tarefas for criada
+            // if (dadosAtualizacao.status && dadosAtualizacao.status !== statusAnterior) {
+            //     await this.tarefaRepository.registrarMudancaStatus(id, usuarioId, statusAnterior, dadosAtualizacao.status);
+            // }
 
             const tarefaAtualizada = await this.tarefaRepository.buscarPorId(id);
 

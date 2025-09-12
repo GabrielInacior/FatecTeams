@@ -1,7 +1,7 @@
-import { Request, Response } from 'express';
-import { AuthenticatedRequest } from '../types';
+import { Response } from 'express';
 import { GrupoRepository } from '../repositories/GrupoRepository';
 import { UsuarioRepository } from '../repositories/UsuarioRepository';
+import { AuthenticatedRequest } from '../types';
 
 export class RelatorioController {
     private grupoRepository: GrupoRepository;
@@ -379,7 +379,7 @@ export class RelatorioController {
 
     private async obterTotalMembros(grupoId: string): Promise<number> {
         try {
-            const membros = await this.grupoRepository.listarMembros(grupoId);
+            const membros = await this.grupoRepository.obterMembros(grupoId);
             return membros.length;
         } catch {
             return 0;

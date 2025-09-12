@@ -55,10 +55,12 @@ export class WebSocketService {
                     nome: mensagem.remetente_nome || 'Usuário'
                 },
                 grupo_id: grupoId,
-                data_criacao: mensagem.data_criacao,
+                data_criacao: mensagem.data_criacao || mensagem.data_envio,
+                data_envio: mensagem.data_envio || mensagem.data_criacao,
                 arquivo_id: mensagem.arquivo_id,
                 mensagem_pai_id: mensagem.mensagem_pai_id,
-                mencionados: mensagem.mencionados
+                mencionados: mensagem.mencionados,
+                editado: mensagem.editado || false
             });
 
             Logger.websocket(`Nova mensagem emitida para grupo ${grupoId}`, { mensagemId: mensagem.id });

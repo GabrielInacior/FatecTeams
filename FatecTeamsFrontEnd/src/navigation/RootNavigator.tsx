@@ -5,20 +5,27 @@ import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useSelector } from 'react-redux';
+import { useTheme } from '../hooks/useTheme';
 import {
-    ForgotPasswordScreen,
-    HomeScreen,
-    LoginScreen,
-    RegisterScreen,
-    SettingsScreen,
+  ForgotPasswordScreen,
+  HomeScreen,
+  LoginScreen,
+  RegisterScreen,
+  SettingsScreen,
 } from '../screens';
 import AccountDeactivatedScreen from '../screens/Auth/AccountDeactivatedScreen';
+import ChatGroupListScreen from '../screens/Groups/ChatGroupListScreen';
+import CreateEventoScreen from '../screens/Groups/CreateEventoScreen';
+import CreateTarefaScreen from '../screens/Groups/CreateTarefaScreen';
+import EditEventoScreen from '../screens/Groups/EditEventoScreen';
+import GrupoChatScreen from '../screens/Groups/GrupoChatScreen';
 import GrupoConvitesScreen from '../screens/Groups/GrupoConvitesScreen';
 import GrupoDetalhesScreen from '../screens/Groups/GrupoDetalhesScreen';
+import GrupoEventosScreen from '../screens/Groups/GrupoEventosScreen';
 import GrupoMembrosScreen from '../screens/Groups/GrupoMembrosScreen';
+import GrupoTarefasScreen from '../screens/Groups/GrupoTarefasScreen';
 import GruposScreen from '../screens/Groups/GruposScreen';
 import EditProfileScreen from '../screens/Settings/EditProfileScreen';
-import { useTheme } from '../hooks/useTheme';
 import { RootState } from '../store';
 import { AppTabParamList, AuthStackParamList, GruposStackParamList, SettingsStackParamList } from '../types/navigation';
 
@@ -60,6 +67,13 @@ const GruposNavigator: React.FC = () => {
       <GruposStack.Screen name="GrupoDetalhes" component={GrupoDetalhesScreen} />
       <GruposStack.Screen name="GrupoMembros" component={GrupoMembrosScreen} />
       <GruposStack.Screen name="GrupoConvites" component={GrupoConvitesScreen} />
+      <GruposStack.Screen name="GrupoEventos" component={GrupoEventosScreen} />
+      <GruposStack.Screen name="GrupoTarefas" component={GrupoTarefasScreen} />
+      <GruposStack.Screen name="CreateEvento" component={CreateEventoScreen} />
+      <GruposStack.Screen name="CreateTarefa" component={CreateTarefaScreen} />
+      <GruposStack.Screen name="EditEvento" component={EditEventoScreen} />
+      <GruposStack.Screen name="ChatGroupList" component={ChatGroupListScreen} />
+      <GruposStack.Screen name="GrupoChat" component={GrupoChatScreen} />
     </GruposStack.Navigator>
   );
 };

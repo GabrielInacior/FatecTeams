@@ -147,12 +147,13 @@ router.put('/notificacoes/configuracoes', authenticateToken, notificacaoControll
 // ROTAS DE EVENTOS
 // ============================================
 
-router.post('/grupos/:grupoId/eventos', authenticateToken, eventoController.criarEvento);
-router.get('/eventos/:id', authenticateToken, eventoController.obterEvento);
-router.put('/eventos/:id', authenticateToken, eventoController.atualizarEvento);
-router.get('/grupos/:grupoId/eventos', authenticateToken, eventoController.listarEventosGrupo);
-router.post('/eventos/:id/participantes', authenticateToken, eventoController.adicionarParticipante);
-router.get('/eventos/meus', authenticateToken, eventoController.meusEventos);
+router.post('/grupos/:grupoId/eventos', authenticateToken, eventoController.criarEvento.bind(eventoController));
+router.get('/eventos/:id', authenticateToken, eventoController.obterEvento.bind(eventoController));
+router.put('/eventos/:id', authenticateToken, eventoController.atualizarEvento.bind(eventoController));
+router.delete('/eventos/:id', authenticateToken, eventoController.deletarEvento.bind(eventoController));
+router.get('/grupos/:grupoId/eventos', authenticateToken, eventoController.listarEventosGrupo.bind(eventoController));
+router.post('/eventos/:id/participantes', authenticateToken, eventoController.adicionarParticipante.bind(eventoController));
+router.get('/eventos/meus', authenticateToken, eventoController.meusEventos.bind(eventoController));
 
 // ============================================
 // ROTAS DE HISTÓRICO DE ATIVIDADES

@@ -1,10 +1,12 @@
-import { GrupoRepository, IGrupo, IGrupoMembro } from '../repositories/GrupoRepository';
 import { v4 as uuidv4 } from 'uuid';
+import { GrupoRepository, IGrupo } from '../repositories/GrupoRepository';
 
 export interface IGrupoCreate {
     nome: string;
     descricao?: string;
-    tipo: 'publico' | 'privado' | 'secreto';
+    categoria: 'projeto' | 'estudo' | 'trabalho';
+    privacidade: 'publico' | 'privado';
+    max_membros?: number;
     configuracoes?: any;
     criador_id: string;
 }
@@ -12,7 +14,9 @@ export interface IGrupoCreate {
 export interface IGrupoUpdate {
     nome?: string;
     descricao?: string;
-    tipo?: 'publico' | 'privado' | 'secreto';
+    categoria?: 'projeto' | 'estudo' | 'trabalho';
+    privacidade?: 'publico' | 'privado';
+    max_membros?: number;
     configuracoes?: any;
 }
 
@@ -48,7 +52,7 @@ export class GrupoEntity {
                 permite_arquivos: true,
                 permite_tarefas: true,
                 tamanho_max_arquivo_mb: 50,
-                requer_aprovacao_membros: this.dados.tipo === 'privado' || this.dados.tipo === 'secreto'
+                requer_aprovacao_membros: this.dados.privacidade === 'privado'
             };
         }
     }
@@ -74,10 +78,16 @@ export class GrupoEntity {
             erros.push('Descrição deve ter no máximo 500 caracteres');
         }
 
-        // Validação do tipo
-        const tiposValidos = ['publico', 'privado', 'fechado', 'secreto'];
-        if (!this.dados.tipo || !tiposValidos.includes(this.dados.tipo)) {
-            erros.push('Tipo de grupo inválido. Use: publico, privado, fechado ou secreto');
+        // Validação da categoria
+        const categoriasValidas = ['projeto', 'estudo', 'trabalho'];
+        if (!this.dados.categoria || !categoriasValidas.includes(this.dados.categoria)) {
+            erros.push('Categoria de grupo inválida. Use: projeto, estudo ou trabalho');
+        }
+
+        // Validação da privacidade
+        const privacidadesValidas = ['publico', 'privado'];
+        if (!this.dados.privacidade || !privacidadesValidas.includes(this.dados.privacidade)) {
+            erros.push('Privacidade de grupo inválida. Use: publico ou privado');
         }
 
         // Validação do criador
@@ -89,6 +99,22 @@ export class GrupoEntity {
             valido: erros.length === 0,
             erros
         };
+    }
+
+    // ============================================
+    // MÉTODOS AUXILIARES
+    // ============================================
+
+    private podeConvidar(membro: any): boolean {
+        return membro && (membro.nivel_permissao === 'admin' || membro.nivel_permissao === 'moderador');
+    }
+
+    private podeRemover(membro: any): boolean {
+        return membro && (membro.nivel_permissao === 'admin' || membro.nivel_permissao === 'moderador');
+    }
+
+    private podeConfigurar(membro: any): boolean {
+        return membro && membro.nivel_permissao === 'admin';
     }
 
     // ============================================
@@ -116,15 +142,8 @@ export class GrupoEntity {
 
             const grupoId = await this.grupoRepository.criar(this.dados);
             
-            // Adicionar o criador como admin do grupo
-            await this.grupoRepository.adicionarMembro({
-                grupo_id: grupoId,
-                usuario_id: this.dados.criador_id,
-                nivel_permissao: 'admin',
-                pode_convidar: true,
-                pode_remover: true,
-                pode_configurar: true
-            });
+            // O criador é automaticamente adicionado como admin via trigger no banco
+            // Não é necessário fazer isso manualmente
 
             const grupoSalvo = await this.grupoRepository.buscarPorId(grupoId);
 
@@ -240,7 +259,7 @@ export class GrupoEntity {
             // Verificar se quem está adicionando tem permissão
             const permissaoAdmin = await this.grupoRepository.verificarPermissao(grupoId, usuarioIdAdmin);
             
-            if (!permissaoAdmin || (!permissaoAdmin.pode_convidar && permissaoAdmin.nivel_permissao !== 'admin')) {
+            if (!permissaoAdmin || (!this.podeConvidar(permissaoAdmin) && permissaoAdmin.nivel_permissao !== 'admin')) {
                 return {
                     sucesso: false,
                     erros: ['Você não tem permissão para adicionar membros']
@@ -259,10 +278,7 @@ export class GrupoEntity {
             const adicionado = await this.grupoRepository.adicionarMembro({
                 grupo_id: grupoId,
                 usuario_id: usuarioIdNovo,
-                nivel_permissao: papel,
-                pode_convidar: papel === 'admin' || papel === 'moderador',
-                pode_remover: papel === 'admin' || papel === 'moderador',
-                pode_configurar: papel === 'admin'
+                nivel_permissao: papel
             });
 
             if (!adicionado) {
@@ -300,7 +316,7 @@ export class GrupoEntity {
             if (usuarioIdAdmin === usuarioIdRemover && permissaoAdmin.nivel_permissao === 'admin') {
                 // Verificar se há outros admins
                 const membros = await this.grupoRepository.listarMembros(grupoId);
-                const outrosAdmins = membros.filter((m: any) => m.papel === 'admin' && m.usuario_id !== usuarioIdAdmin);
+                const outrosAdmins = membros.filter((m: any) => m.nivel_permissao === 'admin' && m.usuario_id !== usuarioIdAdmin);
                 
                 if (outrosAdmins.length === 0) {
                     return {
@@ -311,7 +327,7 @@ export class GrupoEntity {
             }
 
             // Verificar se tem permissão para remover
-            if (usuarioIdAdmin !== usuarioIdRemover && !permissaoAdmin.pode_remover) {
+            if (usuarioIdAdmin !== usuarioIdRemover && !this.podeRemover(permissaoAdmin)) {
                 return {
                     sucesso: false,
                     erros: ['Você não tem permissão para remover membros']
@@ -364,14 +380,7 @@ export class GrupoEntity {
                 };
             }
 
-            const alterado = await this.grupoRepository.adicionarMembro({
-                grupo_id: grupoId,
-                usuario_id: usuarioIdTarget,
-                nivel_permissao: novoPapel,
-                pode_convidar: novoPapel === 'admin' || novoPapel === 'moderador',
-                pode_remover: novoPapel === 'admin' || novoPapel === 'moderador',
-                pode_configurar: novoPapel === 'admin'
-            });
+            const alterado = await this.grupoRepository.alterarPapelMembro(grupoId, usuarioIdTarget, novoPapel);
 
             if (!alterado) {
                 return {
@@ -534,7 +543,7 @@ export class GrupoEntity {
         }
     }
 
-    public async alterarNivelMembro(grupoId: string, usuarioId: string, novoNivel: string): Promise<{ sucesso: boolean; erros?: string[] }> {
+    public async alterarNivelMembro(grupoId: string, usuarioId: string, novoNivel: 'admin' | 'moderador' | 'membro'): Promise<{ sucesso: boolean; erros?: string[] }> {
         try {
             const resultado = await this.grupoRepository.alterarNivelMembro(grupoId, usuarioId, novoNivel);
 
